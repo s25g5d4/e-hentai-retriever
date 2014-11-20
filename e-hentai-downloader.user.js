@@ -8,8 +8,8 @@
 // @grant       GM_xmlhttpRequest
 // ==/UserScript==
 
-/*This script is licensed under GNU General Public License v3
- *http://www.gnu.org/licenses/gpl.html
+/* This script is licensed under MIT License
+ * http://opensource.org/licenses/MIT
  */
 (function (document) {
   var e_hen_download = {
