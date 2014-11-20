@@ -1,22 +1,20 @@
 // ==UserScript==
-// @name        exhentai downloader
-// @namespace   http://exhentai.org
-// @description exhentai downloader
+// @name        e-hentai retriever
+// @namespace   http://e-hentai.org
+// @description e-hentai retriever
 // @include     http://exhentai.org/s/*
 // @include     http://g.e-hentai.org/s/*
-// @version     2
+// @version     2.0.1
 // @grant       GM_xmlhttpRequest
 // ==/UserScript==
 
-/* This script is licensed under MIT License
+/* This script is licensed under under MIT License
  * http://opensource.org/licenses/MIT
  */
+
 (function (document) {
   var e_hen_download = {
-        //"loadjQuery": document.createElement("script"),
         current: {},
-        output: [],
-        //btn: {},
         settings: {
           getNextPageInterval: 5000
         }
@@ -85,9 +83,12 @@
 
     img_node.setAttribute('href', 'javascript:;');
     img_node.innerHTML = '<img src="' + parseResult.src + '" style="' + parseResult.style + '" />';
-    img_node.addEventListener('click', function (event) {
-        FailLoad(event, parseResult.failnl, parseResult.currentUrl);
-    });
+
+    img_node.dataset.failnl = parseResult.failnl;
+    img_node.dataset.currentUrl = parseResult.currentUrl;
+    img_node.dataset.locked = 'false';
+
+    img_node.addEventListener('click',FailLoad);
 
     $('#i3')[0].appendChild(img_node);
 
@@ -108,7 +109,7 @@
         'url': c.next,
 
         'headers': {
-          //'User-Agent': navigator.userAgent,
+          'User-Agent': navigator.userAgent,
           'Referer': c.currentUrl,
           'Cookie': document.cookie
         },
@@ -125,31 +126,40 @@
     else callback(document.body.innerHTML, document.location + '');
   }
 
-  function FailLoad(event, nl, url) {
+  function FailLoad(event) {
     var e = event.target.parentNode,
+        failnl = e.dataset.failnl,
+        currentUrl = e.dataset.currentUrl,
         c = {
-          'next': (url.indexOf('?') > -1 ? '&' : '?') + 'nl=' + nl,
-          'currentUrl': document.location + '',
+          'next': currentUrl + (currentUrl.indexOf('?') > -1 ? '&' : '?') + 'nl=' + failnl,
+          'currentUrl': currentUrl
         };
 
-    GetHtml(function (html) {
-      var regex = /<a[^>]*href="([^"]*)"><img[^>]*id="img"[^>]*src="([^"]*)"[^>]*style="([^"]*)".*onclick="return nl\((\d+)\)/,
+    if (e.dataset.locked === 'true') {
+      return false;
+    }
+
+    e.dataset.locked = 'true';
+
+    GetHtml(function (html, url) {
+      var regex = /<div>([^ ]*) ::.*<img[^>]*id="img"[^>]*src="([^"]*)"[^>]*style="([^"]*)".*onclick="return nl\((\d+)\)/,
           parsed = html.match(regex),
           result;
 
       if(parsed) {
         result = {
-          'filename': parsed[0],
-          'src': parsed[1],
-          'style': parsed[2],
-          'failnl': parsed[3],
+          'filename': parsed[1],
+          'src': parsed[2],
+          'style': parsed[3],
+          'failnl': parsed[4],
           'currentUrl': url
         };
 
-        event.target.innerHTML = '<img src="' + result.src + '" style="' + result.style + '" />';
-        event.target.addEventListener('click', function (event) {
-          FailLoad(event, result.failnl, result.currentUrl);
-        });
+        e.innerHTML = '<img src="' + result.src + '" style="' + result.style + '" />';
+
+        e.dataset.failnl = result.failnl;
+        e.dataset.currentUrl = result.currentUrl;
+        e.dataset.locked = 'false';
       }
     }, c);
   }
