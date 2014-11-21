@@ -166,7 +166,7 @@
 
   function parse(html, currentUrl) {
     var c = e_hen_download.current,
-        regex = /<span>(\d+)<\/span> \/ <span>(\d+)<\/span>.*<div>([^ ]*) ::.*<a[^>]*href="([^"]*)"><img[^>]*src="([^"]*)"[^>]*style="([^"]*)".*onclick="return nl\((\d+)\)/,
+        regex = /<span>(\d+)<\/span> \/ <span>(\d+)<\/span>.*<div>([^ ]*) ::.*<a[^>]*href="([^"]*)"[^>]*><img[^>]*id="img"[^>]*src="([^"]*)"[^>]*style="([^"]*)".*onclick="return nl\((\d+)\)/,
         parsed = html.match(regex),
         result;
 
