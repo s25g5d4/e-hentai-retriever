@@ -4,7 +4,7 @@
 // @description e-hentai retriever
 // @include     http://exhentai.org/s/*
 // @include     http://g.e-hentai.org/s/*
-// @version     2.0.1
+// @version     2.0.2
 // @grant       GM_xmlhttpRequest
 // ==/UserScript==
 
