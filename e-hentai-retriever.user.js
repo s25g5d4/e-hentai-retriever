@@ -4,7 +4,7 @@
 // @description e-hentai retriever
 // @include     http://exhentai.org/s/*
 // @include     http://g.e-hentai.org/s/*
-// @version     2.0.2
+// @version     2.0.1
 // @grant       GM_xmlhttpRequest
 // ==/UserScript==
 
@@ -16,7 +16,7 @@
   var e_hen_download = {
         current: {},
         settings: {
-          getNextPageInterval: 5000
+          getNextPageInterval: 1000
         }
       },
       $ = function $(selector) {
@@ -30,12 +30,23 @@
       buttons_wrapper = document.createElement('div');
 
       buttons_wrapper.setAttribute('id', 'ehd_btn');
-      buttons_wrapper.innerHTML = '<input id="ehd_dlbtn" type="button" value="Generate img Link"><input id="ehd_scbtn" type="button" value="Unlimited Scroll!"><div id="ehd_output" style="display: none;"><div id="ehd_status">please wait, now:<span id="ehd_now"></span></div></div>';
+      buttons_wrapper.innerHTML = '<input id="ehd_dlbtn" type="button" value="Generate img Link"><input id="ehd_scbtn" type="button" value="Unlimited Scroll!"><input id="ehd_stopbtn" type="button" value="Stop At" disabled="disabled"><div id="ehd_output" style="display: none;"><div id="ehd_status">please wait, now:<span id="ehd_now"></span></div></div>';
 
       $('#i2')[0].appendChild(buttons_wrapper);
 
       $("#ehd_dlbtn")[0].addEventListener('click', DLbtnHandler);
       $("#ehd_scbtn")[0].addEventListener('click', SCbtnHandler);
+      $("#ehd_stopbtn")[0].addEventListener('click', function (event) {
+        event.target.setAttribute('disabled', 'disabled');
+        var stopAt = parseInt(prompt('Stop at page:', e_hen_download.current.total), 10);
+        if (isNaN(stopAt)) {
+          alert('Not a number!');
+          event.target.removeAttribute('disabled');
+        }
+        else {
+          e_hen_download.settings.stopAt = stopAt;
+        }
+      })
 
     }
     else {
@@ -45,6 +56,7 @@
 
   function DLbtnHandler() {
     $('#ehd_btn input').forEach(function (e) { e.setAttribute('disabled', 'disabled') });
+    $("#ehd_stopbtn")[0].removeAttribute('disabled');
     $('#ehd_output')[0].style.display = 'block';
 
     GetHtml(DLout);
@@ -60,7 +72,7 @@
 
       $('#ehd_now')[0].innerHTML = c.current + '/' + c.total;
 
-      if (c.current >= c.total) $('#ehd_status')[0].innerHTML = 'Done!';
+      if (c.current >= c.total || c.current >= s.stopAt) $('#ehd_status')[0].innerHTML = 'Done!';
       else setTimeout(function () {
         GetHtml(DLout);
       }, s.getNextPageInterval);
@@ -68,6 +80,7 @@
 
   function SCbtnHandler() {
     $('#ehd_btn input').forEach(function (e) { e.setAttribute('disabled', 'disabled') });
+    $("#ehd_stopbtn")[0].removeAttribute('disabled');
     $('#ehd_output')[0].style.display = 'block';
     $('#i3 a')[0].style.display =  'none';
 
@@ -88,13 +101,14 @@
     img_node.dataset.currentUrl = parseResult.currentUrl;
     img_node.dataset.locked = 'false';
 
-    img_node.addEventListener('click',FailLoad);
+    img_node.addEventListener('click', FailLoad);
+    img_node.childNodes[0].addEventListener('error', FailLoad);
 
     $('#i3')[0].appendChild(img_node);
 
     $('#ehd_now')[0].innerHTML = c.current + '/' + c.total;
 
-    if(c.current >= c.total) $('#ehd_status')[0].innerHTML = 'Done!';
+    if(c.current >= c.total || c.current >= s.stopAt) $('#ehd_status')[0].innerHTML = 'Done!';
     else setTimeout(function () {
         GetHtml(SCout);
     }, s.getNextPageInterval);
@@ -134,7 +148,7 @@
           'next': currentUrl + (currentUrl.indexOf('?') > -1 ? '&' : '?') + 'nl=' + failnl,
           'currentUrl': currentUrl
         };
-
+console.log(event);
     if (e.dataset.locked === 'true') {
       return false;
     }
@@ -142,7 +156,7 @@
     e.dataset.locked = 'true';
 
     GetHtml(function (html, url) {
-      var regex = /<div>([^ ]*) ::.*<img[^>]*id="img"[^>]*src="([^"]*)"[^>]*style="([^"]*)".*onclick="return nl\((\d+)\)/,
+      var regex = /<div>([^ ]*) ::.*<img[^>]*id="img"[^>]*src="([^"]*)"[^>]*style="([^"]*)".*onclick="return nl\('([0-9-]+)'\)/,
           parsed = html.match(regex),
           result;
 
@@ -166,7 +180,7 @@
 
   function parse(html, currentUrl) {
     var c = e_hen_download.current,
-        regex = /<span>(\d+)<\/span> \/ <span>(\d+)<\/span>.*<div>([^ ]*) ::.*<a[^>]*href="([^"]*)"[^>]*><img[^>]*id="img"[^>]*src="([^"]*)"[^>]*style="([^"]*)".*onclick="return nl\((\d+)\)/,
+        regex = /<span>(\d+)<\/span> \/ <span>(\d+)<\/span>.*<div>([^ ]*) ::.*<a[^>]*href="([^"]*)"><img[^>]*src="([^"]*)"[^>]*style="([^"]*)".*onclick="return nl\('([0-9-]+)'\)/,
         parsed = html.match(regex),
         result;
 
