@@ -1,8 +1,9 @@
-# e-hentai retriever v2.0.1
+# e-hentai retriever v2.0.3
 
 ## Features
 
-- Retrieve next image link per 5 seconds
+- Retrieve next image link per 1 seconds
+- Stop at specified page
 - Show all images without loading next page
 
 ## Install
