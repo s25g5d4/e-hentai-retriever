@@ -13,7 +13,7 @@ Drag [e-hentai-retriever.user.js](e-hentai-retriever.user.js) into
 [Mozilla Firefox](https://www.mozilla.org/) with [Greasemonkey]
 (https://addons.mozilla.org/zh-tw/firefox/addon/greasemonkey/) installed.
 
-E-hentai retriever also supports [Google Chorme](http://www.google.com/chrome/)
+E-hentai retriever also supports [Google Chrome](http://www.google.com/chrome/)
 with [Tampermonkey](https://chrome.google.com/webstore/detail/tampermonkey/dhdgffkkebhmkfjojejmpbldmpobfkfo)
 installed.
 
