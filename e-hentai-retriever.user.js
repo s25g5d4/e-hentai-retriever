@@ -4,7 +4,7 @@
 // @description e-hentai retriever
 // @include     http://exhentai.org/s/*
 // @include     http://g.e-hentai.org/s/*
-// @version     2.0.4
+// @version     2.1.0
 // @grant       GM_xmlhttpRequest
 // ==/UserScript==
 
@@ -30,12 +30,24 @@
       buttons_wrapper = document.createElement('div');
 
       buttons_wrapper.setAttribute('id', 'ehd_btn');
-      buttons_wrapper.innerHTML = '<input id="ehd_dlbtn" type="button" value="Generate img Link"><input id="ehd_scbtn" type="button" value="Unlimited Scroll!"><input id="ehd_stopbtn" type="button" value="Stop At" disabled="disabled"><div id="ehd_output" style="display: none;"><div id="ehd_status">please wait, now:<span id="ehd_now"></span></div></div>';
+      buttons_wrapper.innerHTML = '<input id="ehd_enlargebtn" type="button" value="Enlarge"><input id="ehd_dlbtn" type="button" value="Generate img Link"><input id="ehd_scbtn" type="button" value="Unlimited Scroll!"><input id="ehd_stopbtn" type="button" value="Stop At" disabled="disabled"><div id="ehd_output" style="display: none;"><div id="ehd_status">please wait, now:<span id="ehd_now"></span></div></div>';
 
       $('#i1')[0].insertBefore(buttons_wrapper, $('#i2')[0]);
 
       $("#ehd_dlbtn")[0].addEventListener('click', DLbtnHandler);
       $("#ehd_scbtn")[0].addEventListener('click', SCbtnHandler);
+      $("#ehd_enlargebtn")[0].addEventListener('click', function (event) {
+        if (event.target.value.match('enlarge')) {
+          try { unsafeWindow.onresize = null; } catch (e) { console.log(e); };
+          $('#i1')[0].style.maxWidth = $('#i1')[0].style.maxWidth.toString().replace(/\D/g, '') * 2 + 'px';
+          $('#i1')[0].style.width = $('#i1')[0].style.width.toString().replace(/\D/g, '') * 2 + 'px';
+          event.target.setAttribute('value', 'diminish');
+        }
+        else {
+          try { unsafeWindow.onresize = unsafeWindow.update_window_extents; unsafeWindow.update_window_extents(); } catch (e) { console.log(e); };
+          event.target.setAttribute('value', 'enlarge');
+        }
+      });
       $("#ehd_stopbtn")[0].addEventListener('click', function (event) {
         event.target.setAttribute('disabled', 'disabled');
         var stopAt = parseInt(prompt('Stop at page:', e_hen_download.current.total), 10);
@@ -57,6 +69,7 @@
   function DLbtnHandler() {
     $('#ehd_btn input').forEach(function (e) { e.setAttribute('disabled', 'disabled') });
     $("#ehd_stopbtn")[0].removeAttribute('disabled');
+    $("#ehd_enlargebtn")[0].removeAttribute('disabled');
     $('#ehd_output')[0].style.display = 'block';
 
     GetHtml(DLout);
@@ -81,6 +94,7 @@
   function SCbtnHandler() {
     $('#ehd_btn input').forEach(function (e) { e.setAttribute('disabled', 'disabled') });
     $("#ehd_stopbtn")[0].removeAttribute('disabled');
+    $("#ehd_enlargebtn")[0].removeAttribute('disabled');
     $('#ehd_output')[0].style.display = 'block';
     $('#i3 a')[0].style.display =  'none';
 
