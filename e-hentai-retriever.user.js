@@ -4,7 +4,7 @@
 // @description e-hentai retriever
 // @include     http://exhentai.org/s/*
 // @include     http://g.e-hentai.org/s/*
-// @version     2.0.3
+// @version     2.0.4
 // @grant       GM_xmlhttpRequest
 // ==/UserScript==
 
@@ -32,7 +32,7 @@
       buttons_wrapper.setAttribute('id', 'ehd_btn');
       buttons_wrapper.innerHTML = '<input id="ehd_dlbtn" type="button" value="Generate img Link"><input id="ehd_scbtn" type="button" value="Unlimited Scroll!"><input id="ehd_stopbtn" type="button" value="Stop At" disabled="disabled"><div id="ehd_output" style="display: none;"><div id="ehd_status">please wait, now:<span id="ehd_now"></span></div></div>';
 
-      $('#i2')[0].appendChild(buttons_wrapper);
+      $('#i1')[0].insertBefore(buttons_wrapper, $('#i2')[0]);
 
       $("#ehd_dlbtn")[0].addEventListener('click', DLbtnHandler);
       $("#ehd_scbtn")[0].addEventListener('click', SCbtnHandler);
