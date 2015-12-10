@@ -1,4 +1,4 @@
-# e-hentai retriever v2.0.4
+# e-hentai retriever v2.1.0
 
 ## Features
 
