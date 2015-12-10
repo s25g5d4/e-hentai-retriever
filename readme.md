@@ -1,18 +1,19 @@
-# e-hentai retriever v2.1.0
+e-hentai retriever v2.1.0
+===========================================
 
 ## Features
 
-- Retrieve next image link per 1 seconds
+- Retrieve next image link per 1 second
 - Stop at specified page
 - Show all images without loading next page
 
 ## Install
 
-You need [Mozilla Firefox](https://www.mozilla.org/) and [Greasemonkey]
+Drag [e-hentai-retriever.user.js](e-hentai-retriever.user.js) into
+[Mozilla Firefox](https://www.mozilla.org/) with [Greasemonkey]
 (https://addons.mozilla.org/zh-tw/firefox/addon/greasemonkey/) installed.
-Just simply drag `e-hentai-retriever.user.js` into Firefox.
 
-E-hentai retriever now support [Google Chorme](http://www.google.com/chrome/)
+E-hentai retriever also supports [Google Chorme](http://www.google.com/chrome/)
 with [Tampermonkey](https://chrome.google.com/webstore/detail/tampermonkey/dhdgffkkebhmkfjojejmpbldmpobfkfo)
 installed.
 
@@ -24,7 +25,7 @@ title:
 -   `Enlarge` button will double the image frame, allow two images showing
     together horizontally.
 -   `Generate img Link` for retrieve links only.
--   `Unlimited Scroll!` for auto-pager that will show all images in the gallery.
+-   `Unlimited Scroll!` is an auto-pager that loads and puts next image
+    on the screen.
 -   `Stop At` button is only available when generating images/links. It stops
     the ongoing fetching at specified index.
-    
