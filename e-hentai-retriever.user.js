@@ -37,15 +37,15 @@
       $("#ehd_dlbtn")[0].addEventListener('click', DLbtnHandler);
       $("#ehd_scbtn")[0].addEventListener('click', SCbtnHandler);
       $("#ehd_enlargebtn")[0].addEventListener('click', function (event) {
-        if (event.target.value.match('enlarge')) {
+        if (event.target.value.match('Enlarge')) {
           try { unsafeWindow.onresize = null; } catch (e) { console.log(e); };
           $('#i1')[0].style.maxWidth = $('#i1')[0].style.maxWidth.toString().replace(/\D/g, '') * 2 + 'px';
           $('#i1')[0].style.width = $('#i1')[0].style.width.toString().replace(/\D/g, '') * 2 + 'px';
-          event.target.setAttribute('value', 'diminish');
+          event.target.setAttribute('value', 'Diminish');
         }
         else {
           try { unsafeWindow.onresize = unsafeWindow.update_window_extents; unsafeWindow.update_window_extents(); } catch (e) { console.log(e); };
-          event.target.setAttribute('value', 'enlarge');
+          event.target.setAttribute('value', 'Enlarge');
         }
       });
       $("#ehd_stopbtn")[0].addEventListener('click', function (event) {
