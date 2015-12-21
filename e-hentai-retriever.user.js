@@ -4,7 +4,7 @@
 // @description e-hentai & exhentai image url retriever
 // @include     http://exhentai.org/s/*
 // @include     http://g.e-hentai.org/s/*
-// @version     2.2.0
+// @version     2.2.1
 // @grant       GM_xmlhttpRequest
 // @grant       unsafeWindow
 // ==/UserScript==
@@ -12,7 +12,7 @@
 /**
  * @title e-hentai retriever
  * @file Main script of e-hentai retriever.
- * @version 2.2.0
+ * @version 2.2.1
  * @author s25g5d4
  * @copyright Z.J. Wu, s25g5d4 2015
  * @license
@@ -100,7 +100,7 @@ ehRetriever.getNextPage = function getNextPage(url, callback) {
     }, 1);
     return;
   }
-  
+
   GM_xmlhttpRequest({
     'method':  'GET',
     'url':     url.toString(),
@@ -263,7 +263,10 @@ ehRetriever.retrieve = function retrieve(event) {
   ehRetriever.updateInfo();
 
   if (event.currentTarget.getAttribute('id') === 'ehr_dlbtn') writeToPage = ehRetriever.writeURL;
-  else if (event.currentTarget.getAttribute('id') === 'ehr_scbtn') writeToPage = ehRetriever.writeImg;
+  else if (event.currentTarget.getAttribute('id') === 'ehr_scbtn') {
+    writeToPage = ehRetriever.writeImg;
+    $('#i3 a')[0].style.display = 'none';
+  }
 
   if (writeToPage) {
     parsed = writeToPage(document.body.innerHTML);
