@@ -4,7 +4,7 @@
 // @description e-hentai & exhentai image url retriever
 // @include     http://exhentai.org/s/*
 // @include     http://g.e-hentai.org/s/*
-// @version     2.2.1
+// @version     2.2.2
 // @grant       GM_xmlhttpRequest
 // @grant       unsafeWindow
 // ==/UserScript==
@@ -12,7 +12,7 @@
 /**
  * @title e-hentai retriever
  * @file Main script of e-hentai retriever.
- * @version 2.2.1
+ * @version 2.2.2
  * @author s25g5d4
  * @copyright Z.J. Wu, s25g5d4 2015
  * @license
@@ -135,7 +135,7 @@ ehRetriever.getNextPage = function getNextPage(url, callback) {
  * @return {parsedResult} Parsed result.
  */
 ehRetriever.parse = function parse(html) {
-  var regex = /<span>(\d+)<\/span> \/ <span>(\d+)<\/span>.*<div>([^ ]*) ::.*<a[^>]*href="([^"]*)"><img[^>]*src="([^"]*)"[^>]*style="([^"]*)".*onclick="return nl\('([0-9-]+)'\)/;
+  var regex = /<span>(\d+)<\/span> \/ <span>(\d+)<\/span>.*<div>([^ ]*) ::.*<a[^>]*href="([^"]*)"[^>]*><img[^>]*id="img"[^>]*src="([^"]*)"[^>]*style="([^"]*)".*onclick="return nl\('([0-9-]+)'\)/;
   var parsed = html.match(regex);
 
   if (parsed) {
