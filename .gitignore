@@ -1,2 +1,5 @@
 docs
+node_modules
 package.json
+copy.bat
+.vscode
