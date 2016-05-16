@@ -153,7 +153,9 @@ var ehRetriever = function () {
     key: 'getAllPageURL',
     value: function () {
       var ref = _asyncToGenerator(regeneratorRuntime.mark(function _callee2() {
-        var _self, firstPage, pageNumMax, pageNum, allPage;
+        var _this = this;
+
+        var _self, firstPage, pageNumMax, pageNum, allPages;
 
         return regeneratorRuntime.wrap(function _callee2$(_context2) {
           while (1) {
@@ -161,32 +163,34 @@ var ehRetriever = function () {
               case 0:
                 _self = this;
                 _context2.next = 3;
-                return this.fetch('http://' + _self.exprefix + 'hentai.org/g/' + _self.gallery.gid + '/' + _self.gallery.token);
+                return this.fetch('http://' + this.exprefix + 'hentai.org/g/' + this.gallery.gid + '/' + this.gallery.token);
 
               case 3:
                 firstPage = _context2.sent;
                 pageNumMax = void 0;
-                pageNum = firstPage.responseText.match(/g\/[^/]+\/[^/]+\/\?p=\d+/g);
+                pageNum = firstPage.responseText.match(/<table[^>]*class="ptt"[^>]*>((?:[^<]*)(?:<(?!\/table>)[^<]*)*)<\/table>/)[1].match(/g\/[^/]+\/[^/]+\/\?p=\d+/g);
 
-                if (!pageNum) pageNumMax = 0;else pageNumMax = Math.max.apply(null, pageNum.map(function (e) {
+
+                pageNumMax = pageNum ? Math.max.apply(null, pageNum.map(function (e) {
                   return parseInt(e.match(/\d+$/), 10);
-                }));
+                })) : 0;
 
-                _context2.t0 = [firstPage];
-                _context2.next = 10;
+                _context2.next = 9;
                 return Promise.all(Array(pageNumMax).fill().map(function (e, i) {
-                  return _self.fetch('http://' + _self.exprefix + 'hentai.org/g/' + _self.gallery.gid + '/' + _self.gallery.token + '/?p=' + (i + 1));
+                  return _this.fetch('http://' + _this.exprefix + 'hentai.org/g/' + _this.gallery.gid + '/' + _this.gallery.token + '/?p=' + (i + 1));
                 }));
 
-              case 10:
-                _context2.t1 = _context2.sent;
-                allPage = _context2.t0.concat.call(_context2.t0, _context2.t1);
+              case 9:
+                allPages = _context2.sent;
 
+                allPages.unshift(firstPage);
 
-                _self.pages = allPage.reduce(function (p, c) {
-                  return p.concat(c.responseText.match(/s\/[a-z0-9]+\/\d+-\d+(?=[^>]*>[^<]*<img)/ig));
-                }, []).map(function (e) {
-                  var tokens = e.split('/');
+                this.pages = allPages.map(function (e) {
+                  return e.responseText.match(/<div[^>]*class="gdtm"[^>]*>(?:(?:[^<]*)(?:<(?!\/div>)[^<]*)*)<\/div>/g);
+                }).reduce(function (p, c) {
+                  return p.concat(c);
+                }).map(function (e) {
+                  var tokens = e.match(/s\/[a-z0-9]+\/\d+-\d+/)[0].split('/');
                   return {
                     'imgkey': tokens[1],
                     'page': parseInt(tokens[2].split('-')[1], 10)
@@ -195,7 +199,7 @@ var ehRetriever = function () {
 
                 return _context2.abrupt('return');
 
-              case 14:
+              case 13:
               case 'end':
                 return _context2.stop();
             }
@@ -216,12 +220,11 @@ var ehRetriever = function () {
 
       if (typeof url !== 'string') return Promise.reject(new Error('invalid url: ' + url));
 
-      var _self = this;
       var defaultOptions = {
         'method': 'GET',
         'headers': {
           'User-Agent': navigator.userAgent,
-          'Referer': _self.referer,
+          'Referer': this.referer,
           'Cookie': document.cookie
         }
       };
@@ -232,7 +235,7 @@ var ehRetriever = function () {
       options = Object.assign(defaultOptions, options);
       console.log('fetch', url, options);
 
-      return _self.q.queue(function (resolve, reject) {
+      return this.q.queue(function (resolve, reject) {
         (0, _cofetch2.default)(url, options).then(resolve).catch(reject);
       }, 'fetch ' + url);
     }
@@ -246,13 +249,13 @@ var ehRetriever = function () {
           while (1) {
             switch (_context3.prev = _context3.next) {
               case 0:
-                _self = this;
-                _context3.next = 3;
-                return _self.promiseInit;
+                _context3.next = 2;
+                return this.promiseInit;
 
-              case 3:
+              case 2:
+                _self = this;
                 _context3.next = 5;
-                return Promise.all(_self.pages.map(function (e) {
+                return Promise.all(this.pages.map(function (e) {
                   return new Promise(function fetchPage(resolve, reject, failedOnce) {
                     _self.fetch('http://' + _self.exprefix + 'hentai.org/api.php', {
                       'method': 'POST',
@@ -285,11 +288,11 @@ var ehRetriever = function () {
                 });
 
 
-                _self.pages.forEach(function (e, i) {
+                this.pages.forEach(function (e, i) {
                   return Object.assign(e, imageInfo[i]);
                 });
 
-                return _context3.abrupt('return', _self.pages);
+                return _context3.abrupt('return', this.pages);
 
               case 9:
               case 'end':
@@ -309,27 +312,29 @@ var ehRetriever = function () {
     key: 'fail',
     value: function () {
       var ref = _asyncToGenerator(regeneratorRuntime.mark(function _callee4(page) {
-        var _self, p, res, parsed;
+        var p, _self, res, parsed;
 
         return regeneratorRuntime.wrap(function _callee4$(_context4) {
           while (1) {
             switch (_context4.prev = _context4.next) {
               case 0:
+                p = this.pages[page - 1];
                 _self = this;
-                p = _self.pages[page - 1];
                 _context4.next = 4;
-                return new Promise(function fetchPage(resolve, reject) {
+                return new Promise(function fetchPage(resolve, reject, onceFailed) {
                   _self.fetch('http://' + _self.exprefix + 'hentai.org/' + p.url + '?' + p.failnl.map(function (e) {
                     return 'nl=' + e;
-                  }).join('&')).then(resolve).catch(failedOnce ? undefined : fetchPage.bind(null, resolve, reject, true));
+                  }).join('&')).then(resolve).catch(onceFailed ? reject : fetchPage.bind(null, resolve, reject, true));
                 });
 
               case 4:
                 res = _context4.sent;
                 parsed = res.responseText.match(/<img[^>]*id="img"[^>]*src="([^"]+)"[^>]*.*onclick="return nl\('([0-9-]+)'\)/i);
 
+
                 p.imgsrc = parsed[1];
                 p.failnl.push(parsed[2]);
+
                 return _context4.abrupt('return', p);
 
               case 9:
@@ -410,7 +415,7 @@ var Queue = function () {
         (function () {
           var job = _self.q.shift();
           _self.slot.push(job);
-          console.log('job ' + job.name + ' started');
+          console.log('queue: job ' + job.name + ' started');
           if (_self.timeout) job.timeoutid = setTimeout(_self.jobTimeout.bind(_self, job), _self.timeout);
           job.run(function (data) {
             if (job.timeout) {
@@ -419,7 +424,7 @@ var Queue = function () {
             }
 
             _self.removeJob(job);
-            setTimeout(_self.dequeue.bind(_self), 500 + Math.floor(Math.random() * 1000));
+            setTimeout(_self.dequeue.bind(_self), 500 + Math.floor(Math.random() * 100));
             if (job.timeoutid) clearTimeout(job.timeoutid);
             console.log('queue: job ' + job.name + ' resolved');
             job.resolver(data);
@@ -431,7 +436,7 @@ var Queue = function () {
             }
 
             _self.removeJob(job);
-            setTimeout(_self.dequeue.bind(_self), 500 + Math.floor(Math.random() * 1000));
+            setTimeout(_self.dequeue.bind(_self), 500 + Math.floor(Math.random() * 100));
             if (job.timeoutid) clearTimeout(job.timeoutid);
             console.log('queue: job ' + job.name + ' rejected');
             job.rejector(reason);
@@ -1216,86 +1221,56 @@ var _ehRetriever2 = _interopRequireDefault(_ehRetriever);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-function _asyncToGenerator(fn) { return function () { var gen = fn.apply(this, arguments); return new Promise(function (resolve, reject) { function step(key, arg) { try { var info = gen[key](arg); var value = info.value; } catch (error) { reject(error); return; } if (info.done) { resolve(value); } else { return Promise.resolve(value).then(function (value) { return step("next", value); }, function (err) { return step("throw", err); }); } } return step("next"); }); }; }
+var button = document.createElement('button');
+button.textContent = 'Retrieve!';
+document.querySelector('#i1').insertBefore(button, document.querySelector('#i2'));
 
-var ehr = new _ehRetriever2.default(location.href, document.body.innerHTML);
-console.log(ehr);
-
-var div = document.createElement('div');
-div.appendChild(document.createElement('button'));
-div.childNodes[0].textContent = 'retrieve';
-
-div.childNodes[0].addEventListener('click', function (e) {
+button.addEventListener('click', function (e) {
   e.target.setAttribute('disabled', '');
+  e.target.textContent = 'Initializing...';
 
-  ehr.retrieve().then(function (data) {
-    console.log(data);
+  var ehr = new _ehRetriever2.default(location.href, document.body.innerHTML);
+  console.log(ehr);
 
-    data.forEach(function (e) {
-      var imgNode = document.createElement('a');
+  function failReload(e) {
+    e.stopPropagation();
+    e.preventDefault();
 
-      imgNode.setAttribute('href', e.imgsrc);
-      imgNode.innerHTML = '<img src="' + e.imgsrc + '" style="' + e.style + '" />';
-      document.querySelector('#i3').appendChild(imgNode);
+    if (e.target.dataset.locked === 'true') return;
 
-      imgNode.childNodes[0].dataset.page = e.page;
-      imgNode.childNodes[0].dataset.locked = 'false';
-
-      var failReload = function () {
-        var ref = _asyncToGenerator(regeneratorRuntime.mark(function _callee(e) {
-          var imginfo;
-          return regeneratorRuntime.wrap(function _callee$(_context) {
-            while (1) {
-              switch (_context.prev = _context.next) {
-                case 0:
-                  e.stopPropagation();
-                  e.preventDefault();
-
-                  if (!(e.target.dataset.locked === 'true')) {
-                    _context.next = 4;
-                    break;
-                  }
-
-                  return _context.abrupt('return');
-
-                case 4:
-                  e.target.dataset.locked = 'true';
-                  _context.next = 7;
-                  return ehr.fail(parseInt(e.target.dataset.page, 10));
-
-                case 7:
-                  imginfo = _context.sent;
-
-                  e.target.src = imginfo.imgsrc;
-                  e.target.dataset.locked = 'false';
-
-                case 10:
-                case 'end':
-                  return _context.stop();
-              }
-            }
-          }, _callee, undefined);
-        }));
-
-        return function failReload(_x) {
-          return ref.apply(this, arguments);
-        };
-      }();
-
-      imgNode.childNodes[0].addEventListener('error', failReload);
-      imgNode.childNodes[0].addEventListener('click', failReload);
+    e.target.dataset.locked = 'true';
+    ehr.fail(parseInt(e.target.dataset.page, 10)).then(function (imgInfo) {
+      console.log(imgInfo);
+      e.target.src = imgInfo.imgsrc;
+      e.target.parentNode.href = imgInfo.imgsrc;
+      e.target.dataset.locked = 'false';
     });
+  };
+
+  ehr.onPageLoad(function (page, total) {
+    e.target.textContent = page + '/' + total;
+  });
+
+  ehr.retrieve().then(function (pages) {
+    console.log(pages);
 
     document.querySelector('#i3 a').style.display = 'none';
 
-    div.childNodes[0].textContent = 'done!';
+    pages.forEach(function (e) {
+      var pageNode = document.createElement('a');
+
+      pageNode.setAttribute('href', e.imgsrc);
+      pageNode.innerHTML = '<img src="' + e.imgsrc + '" style="' + e.style + '" />';
+      document.querySelector('#i3').appendChild(pageNode);
+
+      pageNode.childNodes[0].dataset.page = e.page;
+      pageNode.childNodes[0].dataset.locked = 'false';
+      pageNode.childNodes[0].addEventListener('error', failReload);
+      pageNode.childNodes[0].addEventListener('click', failReload);
+    });
+
+    e.target.textContent = 'Done!';
   });
-});
-
-document.querySelector('#i2').appendChild(div);
-
-ehr.onPageLoad(function (page, total) {
-  div.childNodes[0].textContent = page + '/' + total;
 });
 
 },{"../lib/ehRetriever":2,"../lib/regenerator-runtime":4}]},{},[6]);
