@@ -59,9 +59,9 @@
 
 	__webpack_require__(1);
 
-	var _ehRetriever = __webpack_require__(3);
+	var _ehretriever = __webpack_require__(3);
 
-	var _ehRetriever2 = _interopRequireDefault(_ehRetriever);
+	var _ehretriever2 = _interopRequireDefault(_ehretriever);
 
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -141,7 +141,7 @@
 	  buttonRetrieve.textContent = 'Initializing...';
 
 	  if (!ehr) {
-	    ehr = new _ehRetriever2.default(location.href, document.body.innerHTML);
+	    ehr = new _ehretriever2.default(location.href, document.body.innerHTML);
 	    console.log(ehr);
 	  }
 
