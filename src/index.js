@@ -1,5 +1,5 @@
 import "regenerator-runtime/runtime";
-import ehRetriever from '../lib/ehRetriever';
+import ehRetriever from '../lib/ehretriever';
 
 // helper functions
 const $ = selector => document.querySelector(selector);
