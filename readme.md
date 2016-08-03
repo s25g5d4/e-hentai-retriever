@@ -27,3 +27,21 @@ title:
     left and right.
 -   `Retrieve!` will retrieve all images (or user-defined range) in the gallery.
 -   `Set Range` can set image retreveing range, including end.
+
+## Build
+
+Requirement:
+
+- [Node.js](https://nodejs.org/en/) for building only
+
+First clone this repository:
+
+`git clone https://github.com/s25g5d4/e-hentai-retriever`
+
+Install dependencies:
+
+`npm install`
+
+Run build:
+
+`npm run build` or (with webpack installed globaly) `webpack`
