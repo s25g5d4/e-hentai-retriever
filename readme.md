@@ -11,12 +11,12 @@ This user script is tested under [Mozilla Firefox](https://www.mozilla.org/)
 . To run user scripts, you have to install [Greasemonkey](https://addons.mozilla.org/zh-tw/firefox/addon/greasemonkey/)
 first.
 
-Might be able to run under [Google Chrome](http://www.google.com/chrome/) with [Tampermonkey](https://chrome.google.com/webstore/detail/tampermonkey/dhdgffkkebhmkfjojejmpbldmpobfkfo)..
+Might be able to run under [Google Chrome](http://www.google.com/chrome/) with [Tampermonkey](https://chrome.google.com/webstore/detail/tampermonkey/dhdgffkkebhmkfjojejmpbldmpobfkfo).
 
 ## Installation
 
 drag `build/e-hentai-retriever.user.js` into Firefox and click "install" button,
-or simply open [build/ehr.user.js](e-hentai-retriever/build/ehr.user.js).
+or simply open [build/ehr.user.js](build/ehr.user.js).
 
 ## Usage
 
