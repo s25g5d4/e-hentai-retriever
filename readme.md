@@ -16,7 +16,7 @@ Might be able to run under [Google Chrome](http://www.google.com/chrome/) with [
 ## Installation
 
 drag `build/e-hentai-retriever.user.js` into Firefox and click "install" button,
-or simply open [e-hentai-retriever.user.js](https://raw.githubusercontent.com/s25g5d4/e-hentai-retriever/latest/e-hentai-retriever.user.js).
+or simply open [build/ehr.user.js](e-hentai-retriever/build/ehr.user.js).
 
 ## Usage
 
