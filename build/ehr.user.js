@@ -4,7 +4,7 @@
 // @description e-hentai & exhentai image url retriever
 // @include     /^https?:\/\/g.e-hentai.org\/s\/.*/
 // @include     /^https?:\/\/exhentai.org\/s\/.*/
-// @version     3.0.0
+// @version     3.0.1
 // @grant       GM_xmlhttpRequest
 // @grant       unsafeWindow
 // ==/UserScript==
@@ -1183,7 +1183,7 @@
 	                allPages.unshift(firstPage);
 
 	                return _context2.abrupt('return', allPages.map(function (e) {
-	                  return e.match(/<div[^>]*class="gdtm"[^>]*>(?:(?:[^<]*)(?:<(?!\/div>)[^<]*)*)<\/div>/g);
+	                  return e.match(/<div[^>]*class="gdt[lm]"[^>]*>(?:(?:[^<]*)(?:<(?!\/div>)[^<]*)*)<\/div>/g);
 	                }).reduce(function (p, c) {
 	                  return p.concat(c);
 	                }).map(function (e) {
