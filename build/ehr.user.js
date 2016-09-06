@@ -1049,7 +1049,7 @@
 	    this.showkey = undefined;
 	    this.exprefix = url.search(/exhentai/) >= 0 ? 'ex' : 'g.e-';
 	    this.pages = [];
-	    this.q = new _queue2.default(3, 3000);
+	    this.q = new _queue2.default(3, { 'timeout': 3000, 'delay': 1000 });
 	    this.onPageLoadCallback = [];
 
 	    this.promiseInit = this.init();
@@ -1153,7 +1153,7 @@
 	                  break;
 	                }
 
-	                pageNum = pageNum[1].match(/g\/[^/]+\/[^/]+\/\?p=\d+$/g);
+	                pageNum = pageNum[1].match(/g\/[^/]+\/[^/]+\/\?p=\d+/g);
 	                _context2.next = 9;
 	                break;
 
@@ -1166,7 +1166,7 @@
 	                // So, if pageNum is null, the gallery has only one page.
 	                if (pageNum) {
 	                  pageNum = pageNum.map(function (e) {
-	                    return parseInt(e.replace(/.*(\d+)$/, '$1'), 10);
+	                    return parseInt(e.match(/(\d+)$/)[1], 10);
 	                  });
 	                }
 	                pageNumMax = pageNum ? Math.max.apply(null, pageNum) : 0;
@@ -1415,78 +1415,109 @@
 	  value: true
 	});
 
+	var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj; };
+
 	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 	var Queue = function () {
 	  function Queue(limit) {
-	    var timeout = arguments.length <= 1 || arguments[1] === undefined ? 0 : arguments[1];
-
 	    _classCallCheck(this, Queue);
 
+	    var timeout = void 0,
+	        delay = void 0;
+
+	    for (var _len = arguments.length, options = Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
+	      options[_key - 1] = arguments[_key];
+	    }
+
+	    if (options.length) {
+	      if (_typeof(options[0]) === 'object') {
+	        var _options$ = options[0];
+	        timeout = _options$.timeout;
+	        delay = _options$.delay;
+	      } else {
+	        timeout = options[0];
+	        delay = options[1];
+	      }
+	    }
+
 	    this.limit = limit;
-	    this.timeout = timeout;
+	    this.timeout = timeout || 0;
+	    this.delay = delay || 0;
 	    this.slot = [];
 	    this.q = [];
 	  }
 
 	  _createClass(Queue, [{
 	    key: 'queue',
-	    value: function queue(asyncFunc, name) {
-	      var _self = this;
+	    value: function queue(executor, name) {
+	      var _this = this;
 
 	      console.log('queue: job ' + name + ' queued');
+
 	      var job = new Promise(function (resolve, reject) {
-	        _self.q.push({
-	          'name': name,
-	          'run': asyncFunc,
-	          'resolver': resolve,
-	          'rejector': reject,
+	        _this.q.push({
+	          'name': name || '',
+	          'run': executor,
+	          'resolve': resolve,
+	          'reject': reject,
 	          'timeout': false,
 	          'timeoutid': undefined
 	        });
 	      });
-	      _self.dequeue();
+	      this.dequeue();
 
 	      return job;
 	    }
 	  }, {
 	    key: 'dequeue',
 	    value: function dequeue() {
-	      var _self = this;
+	      var _this2 = this;
 
-	      if (_self.slot.length < _self.limit && _self.q.length >= 1) {
+	      var q = this.q;
+	      var slot = this.slot;
+	      var limit = this.limit;
+	      var timeout = this.timeout;
+	      var delay = this.delay;
+
+
+	      if (slot.length < limit && q.length >= 1) {
 	        (function () {
-	          var job = _self.q.shift();
-	          _self.slot.push(job);
+	          var job = q.shift();
+	          slot.push(job);
 	          console.log('queue: job ' + job.name + ' started');
-	          if (_self.timeout) job.timeoutid = setTimeout(_self.jobTimeout.bind(_self, job), _self.timeout);
-	          job.run(function (data) {
+
+	          if (timeout) job.timeoutid = setTimeout(_this2.jobTimeout.bind(_this2, job), timeout);
+
+	          var onFulfilled = function onFulfilled(data) {
 	            if (job.timeout) {
-	              job = null;
 	              return;
 	            }
 
-	            _self.removeJob(job);
-	            setTimeout(_self.dequeue.bind(_self), 500 + Math.floor(Math.random() * 100));
+	            _this2.removeJob(job);
+	            setTimeout(_this2.dequeue.bind(_this2), delay); // force dequeue() run after current dequeue()
 	            if (job.timeoutid) clearTimeout(job.timeoutid);
 	            console.log('queue: job ' + job.name + ' resolved');
-	            job.resolver(data);
-	            job = null;
-	          }, function (reason) {
+
+	            job.resolve(data);
+	          };
+
+	          var onRejected = function onRejected(reason) {
 	            if (job.timeout) {
-	              job = null;
 	              return;
 	            }
 
-	            _self.removeJob(job);
-	            setTimeout(_self.dequeue.bind(_self), 500 + Math.floor(Math.random() * 100));
+	            _this2.removeJob(job);
+	            setTimeout(_this2.dequeue.bind(_this2), delay);
 	            if (job.timeoutid) clearTimeout(job.timeoutid);
 	            console.log('queue: job ' + job.name + ' rejected');
-	            job.rejector(reason);
-	            job = null;
-	          });
+
+	            job.reject(reason);
+	          };
+
+	          job.run(onFulfilled, onRejected);
 	        })();
 	      }
 	    }
@@ -1495,7 +1526,7 @@
 	    value: function jobTimeout(job) {
 	      this.removeJob(job);
 	      console.log('queue: job ' + job.name + ' timeout');
-	      job.rejector(new Error('queue: job ' + (job.name || '') + ' timeout'));
+	      job.reject(new Error('queue: job ' + (job.name || '') + ' timeout'));
 	      job = null;
 	    }
 	  }, {
