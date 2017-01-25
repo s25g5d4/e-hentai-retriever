@@ -1,6 +1,9 @@
 import "regenerator-runtime/runtime";
 import ehRetriever from '../lib/ehretriever';
 
+const LoadTimeout = 10000;
+const AutoReload = true;
+
 // helper functions
 const $ = selector => document.querySelector(selector);
 const $$ = selector => Array.from(document.querySelectorAll(selector));
@@ -137,18 +140,23 @@ buttonRetrieve.addEventListener('click', event => {
       pageNode.childNodes[0].dataset.page = e.page;
       pageNode.childNodes[0].dataset.locked = 'false';
 
-      const timeout = setTimeout( () => {
-        console.log(`timeout: page ${e.page}`);
-        const clickEvent = new MouseEvent('click');
-        pageNode.childNodes[0].dispatchEvent(clickEvent);
-      }, 5000);
-
       pageNode.childNodes[0].addEventListener('error', reload);
       pageNode.childNodes[0].addEventListener('click', reload);
 
+      let timeout;
+      if (AutoReload) {
+        timeout = setTimeout( () => {
+          console.log(`timeout: page ${e.page}`);
+          const clickEvent = new MouseEvent('click');
+          pageNode.childNodes[0].dispatchEvent(clickEvent);
+        }, LoadTimeout);
+      }
+
       pageNode.childNodes[0].addEventListener('load', function onload() {
         pageNode.removeEventListener('load', onload);
-        clearTimeout(timeout);
+        if (AutoReload) {
+          clearTimeout(timeout);
+        }
       });
     });
 

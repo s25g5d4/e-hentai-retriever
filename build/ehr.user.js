@@ -65,6 +65,9 @@
 
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
+	var LoadTimeout = 10000;
+	var AutoReload = true;
+
 	// helper functions
 	var $ = function $(selector) {
 	  return document.querySelector(selector);
@@ -202,18 +205,23 @@
 	      pageNode.childNodes[0].dataset.page = e.page;
 	      pageNode.childNodes[0].dataset.locked = 'false';
 
-	      var timeout = setTimeout(function () {
-	        console.log('timeout: page ' + e.page);
-	        var clickEvent = new MouseEvent('click');
-	        pageNode.childNodes[0].dispatchEvent(clickEvent);
-	      }, 5000);
-
 	      pageNode.childNodes[0].addEventListener('error', reload);
 	      pageNode.childNodes[0].addEventListener('click', reload);
 
+	      var timeout = void 0;
+	      if (AutoReload) {
+	        timeout = setTimeout(function () {
+	          console.log('timeout: page ' + e.page);
+	          var clickEvent = new MouseEvent('click');
+	          pageNode.childNodes[0].dispatchEvent(clickEvent);
+	        }, LoadTimeout);
+	      }
+
 	      pageNode.childNodes[0].addEventListener('load', function onload() {
 	        pageNode.removeEventListener('load', onload);
-	        clearTimeout(timeout);
+	        if (AutoReload) {
+	          clearTimeout(timeout);
+	        }
 	      });
 	    });
 
