@@ -2,7 +2,7 @@
 // @name        e-hentai retriever
 // @namespace   http://e-hentai.org
 // @description e-hentai & exhentai image url retriever
-// @include     /^https?:\/\/g.e-hentai.org\/s\/.*/
+// @include     /^https?:\/\/e-hentai.org\/s\/.*/
 // @include     /^https?:\/\/exhentai.org\/s\/.*/
 // @version     3.0.2
 // @grant       GM_xmlhttpRequest
@@ -1047,7 +1047,7 @@
 	    };
 	    this.referer = url;
 	    this.showkey = undefined;
-	    this.exprefix = url.search(/exhentai/) >= 0 ? 'ex' : 'g.e-';
+	    this.exprefix = url.search(/exhentai/) >= 0 ? 'ex' : 'e-';
 	    this.pages = [];
 	    this.q = new _queue2.default(3, { 'timeout': 3000, 'delay': 1000 });
 	    this.onPageLoadCallback = [];
