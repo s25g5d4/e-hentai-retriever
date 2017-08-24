@@ -28,10 +28,8 @@ export class EhRetriever extends EventEmitter {
   referer: string;
   showkey: string;
   ehentaiHost: string;
-  pages: Promise<Page[]>;
   q: Queue<Response>;
-  onPageLoadCallback: ((step: number, all: number) => void)[];
-  promiseInit: Promise<void>;
+  pages: Promise<Page[]>;
 
   constructor(url: string, html: string) {
     super();
