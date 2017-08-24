@@ -1,24 +1,25 @@
-import "regenerator-runtime/runtime";
-import ehRetriever from '../lib/ehretriever';
+import { EhRetriever, Page } from '../lib/ehretriever';
+
+declare const unsafeWindow: any;
 
 const LoadTimeout = 10000;
 const AutoReload = true;
 
 // helper functions
-const $ = selector => document.querySelector(selector);
-const $$ = selector => Array.from(document.querySelectorAll(selector));
+const $ = (selector: string) => document.querySelector(selector) as HTMLElement;
+const $$ = (selector: string) => Array.from(document.querySelectorAll(selector)) as HTMLElement[];
 
+const buttonsFragment = document.createDocumentFragment();
 const buttonDoubleFrame = document.createElement('button');
-buttonDoubleFrame.textContent = "Double Frame";
-$('#i1').insertBefore(buttonDoubleFrame, $('#i2'));
-
 const buttonRetrieve = document.createElement('button');
-buttonRetrieve.textContent = 'Retrieve!';
-$('#i1').insertBefore(buttonRetrieve, $('#i2'));
-
 const buttonRange = document.createElement('button');
+buttonsFragment.appendChild(buttonDoubleFrame);
+buttonsFragment.appendChild(buttonRetrieve);
+buttonsFragment.appendChild(buttonRange);
+buttonDoubleFrame.textContent = 'Double Frame';
+buttonRetrieve.textContent = 'Retrieve!';
 buttonRange.textContent = 'Set Range';
-$('#i1').insertBefore(buttonRange, $('#i2'));
+$('#i1').insertBefore(buttonsFragment, $('#i2'));
 
 let ehentaiResize;
 let maxImageWidth;
@@ -70,7 +71,7 @@ buttonDoubleFrame.addEventListener('click', event => {
   }
 });
 
-let ehr;
+let ehr: EhRetriever;
 
 buttonRetrieve.addEventListener('click', event => {
   buttonRetrieve.setAttribute('disabled', '');
@@ -78,23 +79,23 @@ buttonRetrieve.addEventListener('click', event => {
   buttonRetrieve.textContent = 'Initializing...';
 
   if (!ehr) {
-    ehr = new ehRetriever(location.href, document.body.innerHTML);
+    ehr = new EhRetriever(location.href, document.body.innerHTML);
     console.log(ehr);
   }
 
-  ehr.onPageLoad( (page, total) => {
-    buttonRetrieve.textContent = `${page}/${total}`;
+  ehr.on('load', (progress: {current: number, total: number}) => {
+    buttonRetrieve.textContent = `${progress.current}/${progress.total}`;
   });
 
-  let retrieve;
+  let retrieve: Promise<Page[]>;
 
-  if (document.getElementById('ehrstart')) {
-    const start = parseInt(document.getElementById('ehrstart').value, 10);
-    const stop = parseInt(document.getElementById('ehrstop').value, 10);
+  if ($('#ehrstart')) {
+    const start = parseInt(($('#ehrstart') as HTMLInputElement).value, 10);
+    const stop = parseInt(($('#ehrstop') as HTMLInputElement).value, 10);
     const pageNumMax = parseInt($('div.sn').textContent.match(/\/\s*(\d+)/)[1], 10);
 
     if (stop < start || start <= 0 || start > pageNumMax || stop > pageNumMax) {
-      alert(`invalid range: ${start} - ${stop}, accepted range: 1 - ${pageNumMax}`);
+      window.alert(`invalid range: ${start} - ${stop}, accepted range: 1 - ${pageNumMax}`);
       buttonRetrieve.textContent = 'Retrieve!';
       buttonRetrieve.removeAttribute('disabled');
       return;
@@ -109,24 +110,24 @@ buttonRetrieve.addEventListener('click', event => {
   }
 
   retrieve.then(pages => {
-    console.log(pages);
-
     $('#i3 a').style.display = 'none';
 
-    const reload = event => {
+    const reload = (event: MouseEvent): void => {
       event.stopPropagation();
       event.preventDefault();
 
-      if (event.target.dataset.locked === 'true') return;
+      const target = event.target as HTMLImageElement;
 
-      event.target.dataset.locked = 'true';
+      if (target.dataset.locked === 'true') {
+        return;
+      }
 
-      ehr.fail( parseInt(event.target.dataset.page, 10) ).then(imgInfo => {
-        console.log(imgInfo);
+      target.dataset.locked = 'true';
 
-        event.target.src = imgInfo.imgsrc;
-        event.target.parentNode.href = imgInfo.imgsrc;
-        event.target.dataset.locked = 'false';
+      ehr.fail( parseInt(target.dataset.page, 10) ).then(imgInfo => {
+        target.src = imgInfo.imgsrc;
+        (target.parentNode as HTMLAnchorElement).href = imgInfo.imgsrc;
+        target.dataset.locked = 'false';
       });
     };
 
@@ -137,22 +138,23 @@ buttonRetrieve.addEventListener('click', event => {
       pageNode.innerHTML = `<img src="${e.imgsrc}" style="${e.style}" />`;
       $('#i3').appendChild(pageNode);
 
-      pageNode.childNodes[0].dataset.page = e.page;
-      pageNode.childNodes[0].dataset.locked = 'false';
+      const imgNode = pageNode.childNodes[0] as HTMLImageElement;
+      imgNode.dataset.page = e.page.toString();
+      imgNode.dataset.locked = 'false';
 
-      pageNode.childNodes[0].addEventListener('error', reload);
-      pageNode.childNodes[0].addEventListener('click', reload);
+      imgNode.addEventListener('error', reload);
+      imgNode.addEventListener('click', reload);
 
-      let timeout;
+      let timeout: number;
       if (AutoReload) {
-        timeout = setTimeout( () => {
+        timeout = window.setTimeout( () => {
           console.log(`timeout: page ${e.page}`);
           const clickEvent = new MouseEvent('click');
-          pageNode.childNodes[0].dispatchEvent(clickEvent);
+          imgNode.dispatchEvent(clickEvent);
         }, LoadTimeout);
       }
 
-      pageNode.childNodes[0].addEventListener('load', function onload() {
+      imgNode.addEventListener('load', function onload() {
         pageNode.removeEventListener('load', onload);
         if (AutoReload) {
           clearTimeout(timeout);

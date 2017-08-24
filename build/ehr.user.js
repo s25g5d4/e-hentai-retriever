@@ -4,7 +4,7 @@
 // @description e-hentai & exhentai image url retriever
 // @include     /^https?:\/\/e-hentai.org\/s\/.*/
 // @include     /^https?:\/\/exhentai.org\/s\/.*/
-// @version     3.0.3
+// @version     4.0.0
 // @grant       GM_xmlhttpRequest
 // @grant       unsafeWindow
 // ==/UserScript==
@@ -12,1655 +12,863 @@
 /******/ (function(modules) { // webpackBootstrap
 /******/ 	// The module cache
 /******/ 	var installedModules = {};
-
+/******/
 /******/ 	// The require function
 /******/ 	function __webpack_require__(moduleId) {
-
+/******/
 /******/ 		// Check if module is in cache
-/******/ 		if(installedModules[moduleId])
+/******/ 		if(installedModules[moduleId]) {
 /******/ 			return installedModules[moduleId].exports;
-
+/******/ 		}
 /******/ 		// Create a new module (and put it into the cache)
 /******/ 		var module = installedModules[moduleId] = {
-/******/ 			exports: {},
-/******/ 			id: moduleId,
-/******/ 			loaded: false
+/******/ 			i: moduleId,
+/******/ 			l: false,
+/******/ 			exports: {}
 /******/ 		};
-
+/******/
 /******/ 		// Execute the module function
 /******/ 		modules[moduleId].call(module.exports, module, module.exports, __webpack_require__);
-
+/******/
 /******/ 		// Flag the module as loaded
-/******/ 		module.loaded = true;
-
+/******/ 		module.l = true;
+/******/
 /******/ 		// Return the exports of the module
 /******/ 		return module.exports;
 /******/ 	}
-
-
+/******/
+/******/
 /******/ 	// expose the modules object (__webpack_modules__)
 /******/ 	__webpack_require__.m = modules;
-
+/******/
 /******/ 	// expose the module cache
 /******/ 	__webpack_require__.c = installedModules;
-
+/******/
+/******/ 	// identity function for calling harmony imports with the correct context
+/******/ 	__webpack_require__.i = function(value) { return value; };
+/******/
+/******/ 	// define getter function for harmony exports
+/******/ 	__webpack_require__.d = function(exports, name, getter) {
+/******/ 		if(!__webpack_require__.o(exports, name)) {
+/******/ 			Object.defineProperty(exports, name, {
+/******/ 				configurable: false,
+/******/ 				enumerable: true,
+/******/ 				get: getter
+/******/ 			});
+/******/ 		}
+/******/ 	};
+/******/
+/******/ 	// getDefaultExport function for compatibility with non-harmony modules
+/******/ 	__webpack_require__.n = function(module) {
+/******/ 		var getter = module && module.__esModule ?
+/******/ 			function getDefault() { return module['default']; } :
+/******/ 			function getModuleExports() { return module; };
+/******/ 		__webpack_require__.d(getter, 'a', getter);
+/******/ 		return getter;
+/******/ 	};
+/******/
+/******/ 	// Object.prototype.hasOwnProperty.call
+/******/ 	__webpack_require__.o = function(object, property) { return Object.prototype.hasOwnProperty.call(object, property); };
+/******/
 /******/ 	// __webpack_public_path__
 /******/ 	__webpack_require__.p = "";
-
+/******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(0);
+/******/ 	return __webpack_require__(__webpack_require__.s = 4);
 /******/ })
 /************************************************************************/
 /******/ ([
 /* 0 */
-/***/ function(module, exports, __webpack_require__) {
+/***/ (function(module, exports, __webpack_require__) {
 
-	'use strict';
+"use strict";
 
-	__webpack_require__(1);
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const queue_1 = __webpack_require__(3);
+const cofetch_1 = __webpack_require__(2);
+const EventEmitter = __webpack_require__(1);
+class EhRetriever extends EventEmitter {
+    constructor(url, html) {
+        super();
+        const testEXHentaiUrl = /^https?:\/\/(?:e-|ex)hentai\.org\//;
+        if (typeof url !== 'string') {
+            throw new TypeError('invalid `url`, expected a string');
+        }
+        if (!testEXHentaiUrl.test(url)) {
+            throw new TypeError(`invalid url: ${url}`);
+        }
+        this.url = url;
+        this.html = html;
+        this.gallery = { gid: '', token: '' };
+        this.referer = url;
+        this.showkey = '';
+        this.ehentaiHost = testEXHentaiUrl.exec(url)[0].slice(0, -1);
+        this.q = new queue_1.default(3, 3000, 1000);
+        this.pages = this.init();
+        this.pages.then(() => this.emit('ready'));
+    }
+    init() {
+        return __awaiter(this, void 0, void 0, function* () {
+            if (!this.html) {
+                this.html = yield this.fetch(this.url).then(res => res.text());
+            }
+            const galleryURL = this.html.match(/hentai\.org\/g\/(\d+)\/([a-z0-9]+)/i);
+            const showkey = this.html.match(/showkey="([^"]+)"/i);
+            if (galleryURL) {
+                this.gallery.gid = galleryURL[1];
+                this.gallery.token = galleryURL[2];
+            }
+            else {
+                throw new Error("Can't get gallery URL");
+            }
+            if (showkey) {
+                this.showkey = showkey[1];
+            }
+            else {
+                throw new Error("Can't get showkey");
+            }
+            return yield this.getAllPageURL();
+        });
+    }
+    getAllPageURL() {
+        return __awaiter(this, void 0, void 0, function* () {
+            const { ehentaiHost, gallery: { gid, token } } = this;
+            const firstPage = yield this.fetch(`${ehentaiHost}/g/${gid}/${token}`).then(res => res.text());
+            let pageNum;
+            const pageLinksTable = firstPage.match(/<table[^>]*class="ptt"[^>]*>((?:[^<]*)(?:<(?!\/table>)[^<]*)*)<\/table>/);
+            if (pageLinksTable) {
+                const pageLinks = pageLinksTable[1].match(/g\/[^/]+\/[^/]+\/\?p=\d+/g);
+                if (pageLinks) {
+                    pageNum = Math.max.apply(null, pageLinks.map(e => parseInt(/\d+$/.exec(e)[0], 10)));
+                }
+                else {
+                    pageNum = 0;
+                }
+            }
+            else {
+                throw new Error('Cant get page numbers');
+            }
+            const allPages = yield Promise.all(Array(pageNum).fill(undefined).map((e, i) => {
+                return this.fetch(`${ehentaiHost}/g/${gid}/${token}/?p=${i + 1}`).then(res => res.text());
+            }));
+            allPages.unshift(firstPage);
+            return allPages
+                .map(e => e.match(/<div[^>]*class="gdt\w"[^>]*>(?:(?:[^<]*)(?:<(?!\/div>)[^<]*)*)<\/div>/g))
+                .reduce((p, c) => p.concat(c)) // 2d array to 1d
+                .map(e => {
+                const [, imgkey, page] = e.match(/s\/(\w+)\/\d+-(\d+)/);
+                return { imgkey, page: parseInt(page, 10) };
+            });
+        });
+    }
+    fetch(url, options = {}) {
+        if (typeof url !== 'string') {
+            return Promise.reject(new TypeError('invalid `url`, expected a string'));
+        }
+        if (url.search(/^https?:\/\//) < 0) {
+            return Promise.reject(new TypeError(`invalid url: ${url}`));
+        }
+        const cofetchOptions = {
+            method: 'GET',
+            credentials: 'include',
+            headers: {
+                'User-Agent': navigator.userAgent,
+                Referer: this.referer
+            }
+        };
+        for (const key of Object.keys(options)) {
+            if (key === 'headers') {
+                Object.assign(cofetchOptions.headers, options.headers);
+            }
+            else {
+                cofetchOptions[key] = options[key];
+            }
+        }
+        return this.q.queue((resolve, reject) => {
+            cofetch_1.default(url, cofetchOptions).then(resolve).catch(reject);
+        }, `Fetch ${url} ${JSON.stringify(cofetchOptions)}`);
+    }
+    retrieve(start = 0, stop = -1) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const pages = yield this.pages;
+            if (start < 0 || start >= pages.length || isNaN(start)) {
+                throw new RangeError(`invalid start number: ${start}`);
+            }
+            if (stop < 0) {
+                stop = pages.length - 1;
+            }
+            else if (stop < start || stop >= pages.length || isNaN(stop)) {
+                throw new RangeError(`invalid stop number: ${stop}, start: ${start}`);
+            }
+            const retrievePages = pages.slice(start, stop + 1);
+            const loadPage = (e) => __awaiter(this, void 0, void 0, function* () {
+                if (e.imgsrc && e.filename) {
+                    return Promise.resolve(e);
+                }
+                const fetchPage = yield this.fetch(`${this.ehentaiHost}/api.php`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    // assign e = {'imgkey': ..., 'page': ...} to object literal {'method': ..., 'gid': ..., 'showkey': ...}
+                    // does not modify e
+                    body: JSON.stringify(Object.assign({
+                        method: 'showpage',
+                        gid: this.gallery.gid,
+                        showkey: this.showkey
+                    }, e))
+                }).then(res => res.json());
+                this.emit('load', {
+                    current: e.page - start,
+                    total: stop - start + 1
+                });
+                return fetchPage;
+            });
+            const imagePages = yield Promise.all(retrievePages.map(loadPage));
+            imagePages.forEach((e, i) => {
+                retrievePages[i].filename = e.i.match(/>([^:]+):/)[1].trim();
+                retrievePages[i].imgsrc = e.i3.match(/src="([^"]+)"/)[1];
+                retrievePages[i].failnl = new Set([e.i6.match(/nl\('([^']+)'/)[1]]);
+                retrievePages[i].style = e.i3.match(/style="([^"]+)"/)[1];
+                retrievePages[i].url = e.s;
+            });
+            return retrievePages;
+        });
+    }
+    fail(index) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const { ehentaiHost } = this;
+            const pages = yield this.pages;
+            const failPage = pages[index - 1];
+            const failnl = [...failPage.failnl.values()].map(e => `nl=${e}`).join('&');
+            const res = yield this.fetch(`${this.ehentaiHost}/${failPage.url}?${failnl}`).then(res => res.text());
+            const parsed = res.match(/<img[^>]*id="img"[^>]*src="([^"]+)"[^>]*.*onclick="return nl\('([0-9-]+)'\)/i);
+            if (parsed) {
+                failPage.imgsrc = parsed[1];
+                failPage.failnl.add(parsed[2]);
+                return failPage;
+            }
+            return null;
+        });
+    }
+}
+exports.EhRetriever = EhRetriever;
+exports.default = EhRetriever;
 
-	var _ehretriever = __webpack_require__(3);
 
-	var _ehretriever2 = _interopRequireDefault(_ehretriever);
-
-	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-	var LoadTimeout = 10000;
-	var AutoReload = true;
-
-	// helper functions
-	var $ = function $(selector) {
-	  return document.querySelector(selector);
-	};
-	var $$ = function $$(selector) {
-	  return Array.from(document.querySelectorAll(selector));
-	};
-
-	var buttonDoubleFrame = document.createElement('button');
-	buttonDoubleFrame.textContent = "Double Frame";
-	$('#i1').insertBefore(buttonDoubleFrame, $('#i2'));
-
-	var buttonRetrieve = document.createElement('button');
-	buttonRetrieve.textContent = 'Retrieve!';
-	$('#i1').insertBefore(buttonRetrieve, $('#i2'));
-
-	var buttonRange = document.createElement('button');
-	buttonRange.textContent = 'Set Range';
-	$('#i1').insertBefore(buttonRange, $('#i2'));
-
-	var ehentaiResize = void 0;
-	var maxImageWidth = void 0;
-	var originalWidth = void 0;
-
-	buttonDoubleFrame.addEventListener('click', function (event) {
-	  if (!ehentaiResize) {
-	    try {
-	      ehentaiResize = unsafeWindow.onresize;
-	    } catch (e) {
-	      console.log(e);
-	    }
-	  }
-
-	  if (!maxImageWidth) {
-	    maxImageWidth = Math.max.apply(null, $$('#i3 a img').map(function (e) {
-	      return parseInt(e.style.width, 10);
-	    }));
-	  }
-
-	  if (!originalWidth) {
-	    originalWidth = parseInt($('#i1').style.width, 10);
-	  }
-
-	  if (buttonDoubleFrame.textContent === 'Double Frame') {
-	    buttonDoubleFrame.textContent = 'Reset Frame';
-
-	    try {
-	      unsafeWindow.onresize = null;
-	    } catch (e) {
-	      console.log(e);
-	    };
-
-	    $('#i1').style.maxWidth = maxImageWidth * 2 + 20 + 'px';
-	    $('#i1').style.width = maxImageWidth * 2 + 20 + 'px';
-	  } else {
-	    buttonDoubleFrame.textContent = 'Double Frame';
-
-	    try {
-	      unsafeWindow.onresize = ehentaiResize;
-	      ehentaiResize();
-	    } catch (e) {
-	      console.log(e);
-	      $('#i1').style.maxWidth = originalWidth + 'px';
-	      $('#i1').style.width = originalWidth + 'px';
-	    }
-	  }
-	});
-
-	var ehr = void 0;
-
-	buttonRetrieve.addEventListener('click', function (event) {
-	  buttonRetrieve.setAttribute('disabled', '');
-	  buttonRange.setAttribute('disabled', '');
-	  buttonRetrieve.textContent = 'Initializing...';
-
-	  if (!ehr) {
-	    ehr = new _ehretriever2.default(location.href, document.body.innerHTML);
-	    console.log(ehr);
-	  }
-
-	  ehr.onPageLoad(function (page, total) {
-	    buttonRetrieve.textContent = page + '/' + total;
-	  });
-
-	  var retrieve = void 0;
-
-	  if (document.getElementById('ehrstart')) {
-	    var start = parseInt(document.getElementById('ehrstart').value, 10);
-	    var stop = parseInt(document.getElementById('ehrstop').value, 10);
-	    var pageNumMax = parseInt($('div.sn').textContent.match(/\/\s*(\d+)/)[1], 10);
-
-	    if (stop < start || start <= 0 || start > pageNumMax || stop > pageNumMax) {
-	      alert('invalid range: ' + start + ' - ' + stop + ', accepted range: 1 - ' + pageNumMax);
-	      buttonRetrieve.textContent = 'Retrieve!';
-	      buttonRetrieve.removeAttribute('disabled');
-	      return;
-	    }
-
-	    retrieve = ehr.retrieve(start - 1, stop - 1);
-	    $('#ehrsetrange').parentNode.removeChild($('#ehrsetrange'));
-	  } else {
-	    retrieve = ehr.retrieve();
-	    buttonRange.parentNode.removeChild(buttonRange);
-	  }
-
-	  retrieve.then(function (pages) {
-	    console.log(pages);
-
-	    $('#i3 a').style.display = 'none';
-
-	    var reload = function reload(event) {
-	      event.stopPropagation();
-	      event.preventDefault();
-
-	      if (event.target.dataset.locked === 'true') return;
-
-	      event.target.dataset.locked = 'true';
-
-	      ehr.fail(parseInt(event.target.dataset.page, 10)).then(function (imgInfo) {
-	        console.log(imgInfo);
-
-	        event.target.src = imgInfo.imgsrc;
-	        event.target.parentNode.href = imgInfo.imgsrc;
-	        event.target.dataset.locked = 'false';
-	      });
-	    };
-
-	    pages.forEach(function (e) {
-	      var pageNode = document.createElement('a');
-
-	      pageNode.setAttribute('href', e.imgsrc);
-	      pageNode.innerHTML = '<img src="' + e.imgsrc + '" style="' + e.style + '" />';
-	      $('#i3').appendChild(pageNode);
-
-	      pageNode.childNodes[0].dataset.page = e.page;
-	      pageNode.childNodes[0].dataset.locked = 'false';
-
-	      pageNode.childNodes[0].addEventListener('error', reload);
-	      pageNode.childNodes[0].addEventListener('click', reload);
-
-	      var timeout = void 0;
-	      if (AutoReload) {
-	        timeout = setTimeout(function () {
-	          console.log('timeout: page ' + e.page);
-	          var clickEvent = new MouseEvent('click');
-	          pageNode.childNodes[0].dispatchEvent(clickEvent);
-	        }, LoadTimeout);
-	      }
-
-	      pageNode.childNodes[0].addEventListener('load', function onload() {
-	        pageNode.removeEventListener('load', onload);
-	        if (AutoReload) {
-	          clearTimeout(timeout);
-	        }
-	      });
-	    });
-
-	    buttonRetrieve.textContent = 'Done!';
-	    buttonDoubleFrame.removeAttribute('disabled');
-	  }).catch(function (e) {
-	    console.log(e);
-	  });
-	});
-
-	buttonRange.addEventListener('click', function (event) {
-	  // override e-hentai's viewing shortcut
-	  document.onkeydown = undefined;
-
-	  var pageNum = $('div.sn').textContent.match(/(\d+)\s*\/\s*(\d+)/).slice(1);
-	  buttonRange.insertAdjacentHTML('afterend', '<span id="ehrsetrange"><input type="number" id="ehrstart" value="' + pageNum[0] + '" min="1" max="' + pageNum[1] + '"> - <input type="number" id="ehrstop" value="' + pageNum[1] + '" min="1" max="' + pageNum[1] + '"></span>');
-
-	  buttonRange.parentNode.removeChild(buttonRange);
-	});
-
-/***/ },
+/***/ }),
 /* 1 */
-/***/ function(module, exports, __webpack_require__) {
-
-	/* WEBPACK VAR INJECTION */(function(global, process) {/**
-	 * Copyright (c) 2014, Facebook, Inc.
-	 * All rights reserved.
-	 *
-	 * This source code is licensed under the BSD-style license found in the
-	 * https://raw.github.com/facebook/regenerator/master/LICENSE file. An
-	 * additional grant of patent rights can be found in the PATENTS file in
-	 * the same directory.
-	 */
-
-	!(function(global) {
-	  "use strict";
-
-	  var hasOwn = Object.prototype.hasOwnProperty;
-	  var undefined; // More compressible than void 0.
-	  var $Symbol = typeof Symbol === "function" ? Symbol : {};
-	  var iteratorSymbol = $Symbol.iterator || "@@iterator";
-	  var toStringTagSymbol = $Symbol.toStringTag || "@@toStringTag";
-
-	  var inModule = typeof module === "object";
-	  var runtime = global.regeneratorRuntime;
-	  if (runtime) {
-	    if (inModule) {
-	      // If regeneratorRuntime is defined globally and we're in a module,
-	      // make the exports object identical to regeneratorRuntime.
-	      module.exports = runtime;
-	    }
-	    // Don't bother evaluating the rest of this file if the runtime was
-	    // already defined globally.
-	    return;
-	  }
-
-	  // Define the runtime globally (as expected by generated code) as either
-	  // module.exports (if we're in a module) or a new, empty object.
-	  runtime = global.regeneratorRuntime = inModule ? module.exports : {};
-
-	  function wrap(innerFn, outerFn, self, tryLocsList) {
-	    // If outerFn provided, then outerFn.prototype instanceof Generator.
-	    var generator = Object.create((outerFn || Generator).prototype);
-	    var context = new Context(tryLocsList || []);
-
-	    // The ._invoke method unifies the implementations of the .next,
-	    // .throw, and .return methods.
-	    generator._invoke = makeInvokeMethod(innerFn, self, context);
-
-	    return generator;
-	  }
-	  runtime.wrap = wrap;
-
-	  // Try/catch helper to minimize deoptimizations. Returns a completion
-	  // record like context.tryEntries[i].completion. This interface could
-	  // have been (and was previously) designed to take a closure to be
-	  // invoked without arguments, but in all the cases we care about we
-	  // already have an existing method we want to call, so there's no need
-	  // to create a new function object. We can even get away with assuming
-	  // the method takes exactly one argument, since that happens to be true
-	  // in every case, so we don't have to touch the arguments object. The
-	  // only additional allocation required is the completion record, which
-	  // has a stable shape and so hopefully should be cheap to allocate.
-	  function tryCatch(fn, obj, arg) {
-	    try {
-	      return { type: "normal", arg: fn.call(obj, arg) };
-	    } catch (err) {
-	      return { type: "throw", arg: err };
-	    }
-	  }
-
-	  var GenStateSuspendedStart = "suspendedStart";
-	  var GenStateSuspendedYield = "suspendedYield";
-	  var GenStateExecuting = "executing";
-	  var GenStateCompleted = "completed";
-
-	  // Returning this object from the innerFn has the same effect as
-	  // breaking out of the dispatch switch statement.
-	  var ContinueSentinel = {};
-
-	  // Dummy constructor functions that we use as the .constructor and
-	  // .constructor.prototype properties for functions that return Generator
-	  // objects. For full spec compliance, you may wish to configure your
-	  // minifier not to mangle the names of these two functions.
-	  function Generator() {}
-	  function GeneratorFunction() {}
-	  function GeneratorFunctionPrototype() {}
-
-	  var Gp = GeneratorFunctionPrototype.prototype = Generator.prototype;
-	  GeneratorFunction.prototype = Gp.constructor = GeneratorFunctionPrototype;
-	  GeneratorFunctionPrototype.constructor = GeneratorFunction;
-	  GeneratorFunctionPrototype[toStringTagSymbol] = GeneratorFunction.displayName = "GeneratorFunction";
-
-	  // Helper for defining the .next, .throw, and .return methods of the
-	  // Iterator interface in terms of a single ._invoke method.
-	  function defineIteratorMethods(prototype) {
-	    ["next", "throw", "return"].forEach(function(method) {
-	      prototype[method] = function(arg) {
-	        return this._invoke(method, arg);
-	      };
-	    });
-	  }
-
-	  runtime.isGeneratorFunction = function(genFun) {
-	    var ctor = typeof genFun === "function" && genFun.constructor;
-	    return ctor
-	      ? ctor === GeneratorFunction ||
-	        // For the native GeneratorFunction constructor, the best we can
-	        // do is to check its .name property.
-	        (ctor.displayName || ctor.name) === "GeneratorFunction"
-	      : false;
-	  };
-
-	  runtime.mark = function(genFun) {
-	    if (Object.setPrototypeOf) {
-	      Object.setPrototypeOf(genFun, GeneratorFunctionPrototype);
-	    } else {
-	      genFun.__proto__ = GeneratorFunctionPrototype;
-	      if (!(toStringTagSymbol in genFun)) {
-	        genFun[toStringTagSymbol] = "GeneratorFunction";
-	      }
-	    }
-	    genFun.prototype = Object.create(Gp);
-	    return genFun;
-	  };
-
-	  // Within the body of any async function, `await x` is transformed to
-	  // `yield regeneratorRuntime.awrap(x)`, so that the runtime can test
-	  // `value instanceof AwaitArgument` to determine if the yielded value is
-	  // meant to be awaited. Some may consider the name of this method too
-	  // cutesy, but they are curmudgeons.
-	  runtime.awrap = function(arg) {
-	    return new AwaitArgument(arg);
-	  };
-
-	  function AwaitArgument(arg) {
-	    this.arg = arg;
-	  }
-
-	  function AsyncIterator(generator) {
-	    function invoke(method, arg, resolve, reject) {
-	      var record = tryCatch(generator[method], generator, arg);
-	      if (record.type === "throw") {
-	        reject(record.arg);
-	      } else {
-	        var result = record.arg;
-	        var value = result.value;
-	        if (value instanceof AwaitArgument) {
-	          return Promise.resolve(value.arg).then(function(value) {
-	            invoke("next", value, resolve, reject);
-	          }, function(err) {
-	            invoke("throw", err, resolve, reject);
-	          });
-	        }
-
-	        return Promise.resolve(value).then(function(unwrapped) {
-	          // When a yielded Promise is resolved, its final value becomes
-	          // the .value of the Promise<{value,done}> result for the
-	          // current iteration. If the Promise is rejected, however, the
-	          // result for this iteration will be rejected with the same
-	          // reason. Note that rejections of yielded Promises are not
-	          // thrown back into the generator function, as is the case
-	          // when an awaited Promise is rejected. This difference in
-	          // behavior between yield and await is important, because it
-	          // allows the consumer to decide what to do with the yielded
-	          // rejection (swallow it and continue, manually .throw it back
-	          // into the generator, abandon iteration, whatever). With
-	          // await, by contrast, there is no opportunity to examine the
-	          // rejection reason outside the generator function, so the
-	          // only option is to throw it from the await expression, and
-	          // let the generator function handle the exception.
-	          result.value = unwrapped;
-	          resolve(result);
-	        }, reject);
-	      }
-	    }
-
-	    if (typeof process === "object" && process.domain) {
-	      invoke = process.domain.bind(invoke);
-	    }
-
-	    var previousPromise;
-
-	    function enqueue(method, arg) {
-	      function callInvokeWithMethodAndArg() {
-	        return new Promise(function(resolve, reject) {
-	          invoke(method, arg, resolve, reject);
-	        });
-	      }
-
-	      return previousPromise =
-	        // If enqueue has been called before, then we want to wait until
-	        // all previous Promises have been resolved before calling invoke,
-	        // so that results are always delivered in the correct order. If
-	        // enqueue has not been called before, then it is important to
-	        // call invoke immediately, without waiting on a callback to fire,
-	        // so that the async generator function has the opportunity to do
-	        // any necessary setup in a predictable way. This predictability
-	        // is why the Promise constructor synchronously invokes its
-	        // executor callback, and why async functions synchronously
-	        // execute code before the first await. Since we implement simple
-	        // async functions in terms of async generators, it is especially
-	        // important to get this right, even though it requires care.
-	        previousPromise ? previousPromise.then(
-	          callInvokeWithMethodAndArg,
-	          // Avoid propagating failures to Promises returned by later
-	          // invocations of the iterator.
-	          callInvokeWithMethodAndArg
-	        ) : callInvokeWithMethodAndArg();
-	    }
-
-	    // Define the unified helper method that is used to implement .next,
-	    // .throw, and .return (see defineIteratorMethods).
-	    this._invoke = enqueue;
-	  }
-
-	  defineIteratorMethods(AsyncIterator.prototype);
-
-	  // Note that simple async functions are implemented on top of
-	  // AsyncIterator objects; they just return a Promise for the value of
-	  // the final result produced by the iterator.
-	  runtime.async = function(innerFn, outerFn, self, tryLocsList) {
-	    var iter = new AsyncIterator(
-	      wrap(innerFn, outerFn, self, tryLocsList)
-	    );
-
-	    return runtime.isGeneratorFunction(outerFn)
-	      ? iter // If outerFn is a generator, return the full iterator.
-	      : iter.next().then(function(result) {
-	          return result.done ? result.value : iter.next();
-	        });
-	  };
-
-	  function makeInvokeMethod(innerFn, self, context) {
-	    var state = GenStateSuspendedStart;
-
-	    return function invoke(method, arg) {
-	      if (state === GenStateExecuting) {
-	        throw new Error("Generator is already running");
-	      }
-
-	      if (state === GenStateCompleted) {
-	        if (method === "throw") {
-	          throw arg;
-	        }
-
-	        // Be forgiving, per 25.3.3.3.3 of the spec:
-	        // https://people.mozilla.org/~jorendorff/es6-draft.html#sec-generatorresume
-	        return doneResult();
-	      }
-
-	      while (true) {
-	        var delegate = context.delegate;
-	        if (delegate) {
-	          if (method === "return" ||
-	              (method === "throw" && delegate.iterator[method] === undefined)) {
-	            // A return or throw (when the delegate iterator has no throw
-	            // method) always terminates the yield* loop.
-	            context.delegate = null;
-
-	            // If the delegate iterator has a return method, give it a
-	            // chance to clean up.
-	            var returnMethod = delegate.iterator["return"];
-	            if (returnMethod) {
-	              var record = tryCatch(returnMethod, delegate.iterator, arg);
-	              if (record.type === "throw") {
-	                // If the return method threw an exception, let that
-	                // exception prevail over the original return or throw.
-	                method = "throw";
-	                arg = record.arg;
-	                continue;
-	              }
-	            }
-
-	            if (method === "return") {
-	              // Continue with the outer return, now that the delegate
-	              // iterator has been terminated.
-	              continue;
-	            }
-	          }
-
-	          var record = tryCatch(
-	            delegate.iterator[method],
-	            delegate.iterator,
-	            arg
-	          );
-
-	          if (record.type === "throw") {
-	            context.delegate = null;
-
-	            // Like returning generator.throw(uncaught), but without the
-	            // overhead of an extra function call.
-	            method = "throw";
-	            arg = record.arg;
-	            continue;
-	          }
-
-	          // Delegate generator ran and handled its own exceptions so
-	          // regardless of what the method was, we continue as if it is
-	          // "next" with an undefined arg.
-	          method = "next";
-	          arg = undefined;
-
-	          var info = record.arg;
-	          if (info.done) {
-	            context[delegate.resultName] = info.value;
-	            context.next = delegate.nextLoc;
-	          } else {
-	            state = GenStateSuspendedYield;
-	            return info;
-	          }
-
-	          context.delegate = null;
-	        }
-
-	        if (method === "next") {
-	          // Setting context._sent for legacy support of Babel's
-	          // function.sent implementation.
-	          context.sent = context._sent = arg;
-
-	        } else if (method === "throw") {
-	          if (state === GenStateSuspendedStart) {
-	            state = GenStateCompleted;
-	            throw arg;
-	          }
-
-	          if (context.dispatchException(arg)) {
-	            // If the dispatched exception was caught by a catch block,
-	            // then let that catch block handle the exception normally.
-	            method = "next";
-	            arg = undefined;
-	          }
-
-	        } else if (method === "return") {
-	          context.abrupt("return", arg);
-	        }
-
-	        state = GenStateExecuting;
-
-	        var record = tryCatch(innerFn, self, context);
-	        if (record.type === "normal") {
-	          // If an exception is thrown from innerFn, we leave state ===
-	          // GenStateExecuting and loop back for another invocation.
-	          state = context.done
-	            ? GenStateCompleted
-	            : GenStateSuspendedYield;
-
-	          var info = {
-	            value: record.arg,
-	            done: context.done
-	          };
-
-	          if (record.arg === ContinueSentinel) {
-	            if (context.delegate && method === "next") {
-	              // Deliberately forget the last sent value so that we don't
-	              // accidentally pass it on to the delegate.
-	              arg = undefined;
-	            }
-	          } else {
-	            return info;
-	          }
-
-	        } else if (record.type === "throw") {
-	          state = GenStateCompleted;
-	          // Dispatch the exception by looping back around to the
-	          // context.dispatchException(arg) call above.
-	          method = "throw";
-	          arg = record.arg;
-	        }
-	      }
-	    };
-	  }
-
-	  // Define Generator.prototype.{next,throw,return} in terms of the
-	  // unified ._invoke helper method.
-	  defineIteratorMethods(Gp);
-
-	  Gp[iteratorSymbol] = function() {
-	    return this;
-	  };
-
-	  Gp[toStringTagSymbol] = "Generator";
-
-	  Gp.toString = function() {
-	    return "[object Generator]";
-	  };
-
-	  function pushTryEntry(locs) {
-	    var entry = { tryLoc: locs[0] };
-
-	    if (1 in locs) {
-	      entry.catchLoc = locs[1];
-	    }
-
-	    if (2 in locs) {
-	      entry.finallyLoc = locs[2];
-	      entry.afterLoc = locs[3];
-	    }
-
-	    this.tryEntries.push(entry);
-	  }
-
-	  function resetTryEntry(entry) {
-	    var record = entry.completion || {};
-	    record.type = "normal";
-	    delete record.arg;
-	    entry.completion = record;
-	  }
-
-	  function Context(tryLocsList) {
-	    // The root entry object (effectively a try statement without a catch
-	    // or a finally block) gives us a place to store values thrown from
-	    // locations where there is no enclosing try statement.
-	    this.tryEntries = [{ tryLoc: "root" }];
-	    tryLocsList.forEach(pushTryEntry, this);
-	    this.reset(true);
-	  }
-
-	  runtime.keys = function(object) {
-	    var keys = [];
-	    for (var key in object) {
-	      keys.push(key);
-	    }
-	    keys.reverse();
-
-	    // Rather than returning an object with a next method, we keep
-	    // things simple and return the next function itself.
-	    return function next() {
-	      while (keys.length) {
-	        var key = keys.pop();
-	        if (key in object) {
-	          next.value = key;
-	          next.done = false;
-	          return next;
-	        }
-	      }
-
-	      // To avoid creating an additional object, we just hang the .value
-	      // and .done properties off the next function object itself. This
-	      // also ensures that the minifier will not anonymize the function.
-	      next.done = true;
-	      return next;
-	    };
-	  };
-
-	  function values(iterable) {
-	    if (iterable) {
-	      var iteratorMethod = iterable[iteratorSymbol];
-	      if (iteratorMethod) {
-	        return iteratorMethod.call(iterable);
-	      }
-
-	      if (typeof iterable.next === "function") {
-	        return iterable;
-	      }
-
-	      if (!isNaN(iterable.length)) {
-	        var i = -1, next = function next() {
-	          while (++i < iterable.length) {
-	            if (hasOwn.call(iterable, i)) {
-	              next.value = iterable[i];
-	              next.done = false;
-	              return next;
-	            }
-	          }
-
-	          next.value = undefined;
-	          next.done = true;
-
-	          return next;
-	        };
-
-	        return next.next = next;
-	      }
-	    }
-
-	    // Return an iterator with no values.
-	    return { next: doneResult };
-	  }
-	  runtime.values = values;
-
-	  function doneResult() {
-	    return { value: undefined, done: true };
-	  }
-
-	  Context.prototype = {
-	    constructor: Context,
-
-	    reset: function(skipTempReset) {
-	      this.prev = 0;
-	      this.next = 0;
-	      // Resetting context._sent for legacy support of Babel's
-	      // function.sent implementation.
-	      this.sent = this._sent = undefined;
-	      this.done = false;
-	      this.delegate = null;
-
-	      this.tryEntries.forEach(resetTryEntry);
-
-	      if (!skipTempReset) {
-	        for (var name in this) {
-	          // Not sure about the optimal order of these conditions:
-	          if (name.charAt(0) === "t" &&
-	              hasOwn.call(this, name) &&
-	              !isNaN(+name.slice(1))) {
-	            this[name] = undefined;
-	          }
-	        }
-	      }
-	    },
-
-	    stop: function() {
-	      this.done = true;
-
-	      var rootEntry = this.tryEntries[0];
-	      var rootRecord = rootEntry.completion;
-	      if (rootRecord.type === "throw") {
-	        throw rootRecord.arg;
-	      }
-
-	      return this.rval;
-	    },
-
-	    dispatchException: function(exception) {
-	      if (this.done) {
-	        throw exception;
-	      }
-
-	      var context = this;
-	      function handle(loc, caught) {
-	        record.type = "throw";
-	        record.arg = exception;
-	        context.next = loc;
-	        return !!caught;
-	      }
-
-	      for (var i = this.tryEntries.length - 1; i >= 0; --i) {
-	        var entry = this.tryEntries[i];
-	        var record = entry.completion;
-
-	        if (entry.tryLoc === "root") {
-	          // Exception thrown outside of any try block that could handle
-	          // it, so set the completion value of the entire function to
-	          // throw the exception.
-	          return handle("end");
-	        }
-
-	        if (entry.tryLoc <= this.prev) {
-	          var hasCatch = hasOwn.call(entry, "catchLoc");
-	          var hasFinally = hasOwn.call(entry, "finallyLoc");
-
-	          if (hasCatch && hasFinally) {
-	            if (this.prev < entry.catchLoc) {
-	              return handle(entry.catchLoc, true);
-	            } else if (this.prev < entry.finallyLoc) {
-	              return handle(entry.finallyLoc);
-	            }
-
-	          } else if (hasCatch) {
-	            if (this.prev < entry.catchLoc) {
-	              return handle(entry.catchLoc, true);
-	            }
-
-	          } else if (hasFinally) {
-	            if (this.prev < entry.finallyLoc) {
-	              return handle(entry.finallyLoc);
-	            }
-
-	          } else {
-	            throw new Error("try statement without catch or finally");
-	          }
-	        }
-	      }
-	    },
-
-	    abrupt: function(type, arg) {
-	      for (var i = this.tryEntries.length - 1; i >= 0; --i) {
-	        var entry = this.tryEntries[i];
-	        if (entry.tryLoc <= this.prev &&
-	            hasOwn.call(entry, "finallyLoc") &&
-	            this.prev < entry.finallyLoc) {
-	          var finallyEntry = entry;
-	          break;
-	        }
-	      }
-
-	      if (finallyEntry &&
-	          (type === "break" ||
-	           type === "continue") &&
-	          finallyEntry.tryLoc <= arg &&
-	          arg <= finallyEntry.finallyLoc) {
-	        // Ignore the finally entry if control is not jumping to a
-	        // location outside the try/catch block.
-	        finallyEntry = null;
-	      }
-
-	      var record = finallyEntry ? finallyEntry.completion : {};
-	      record.type = type;
-	      record.arg = arg;
-
-	      if (finallyEntry) {
-	        this.next = finallyEntry.finallyLoc;
-	      } else {
-	        this.complete(record);
-	      }
-
-	      return ContinueSentinel;
-	    },
-
-	    complete: function(record, afterLoc) {
-	      if (record.type === "throw") {
-	        throw record.arg;
-	      }
-
-	      if (record.type === "break" ||
-	          record.type === "continue") {
-	        this.next = record.arg;
-	      } else if (record.type === "return") {
-	        this.rval = record.arg;
-	        this.next = "end";
-	      } else if (record.type === "normal" && afterLoc) {
-	        this.next = afterLoc;
-	      }
-	    },
-
-	    finish: function(finallyLoc) {
-	      for (var i = this.tryEntries.length - 1; i >= 0; --i) {
-	        var entry = this.tryEntries[i];
-	        if (entry.finallyLoc === finallyLoc) {
-	          this.complete(entry.completion, entry.afterLoc);
-	          resetTryEntry(entry);
-	          return ContinueSentinel;
-	        }
-	      }
-	    },
-
-	    "catch": function(tryLoc) {
-	      for (var i = this.tryEntries.length - 1; i >= 0; --i) {
-	        var entry = this.tryEntries[i];
-	        if (entry.tryLoc === tryLoc) {
-	          var record = entry.completion;
-	          if (record.type === "throw") {
-	            var thrown = record.arg;
-	            resetTryEntry(entry);
-	          }
-	          return thrown;
-	        }
-	      }
-
-	      // The context.catch method must only be called with a location
-	      // argument that corresponds to a known catch block.
-	      throw new Error("illegal catch attempt");
-	    },
-
-	    delegateYield: function(iterable, resultName, nextLoc) {
-	      this.delegate = {
-	        iterator: values(iterable),
-	        resultName: resultName,
-	        nextLoc: nextLoc
-	      };
-
-	      return ContinueSentinel;
-	    }
-	  };
-	})(
-	  // Among the various tricks for obtaining a reference to the global
-	  // object, this seems to be the most reliable technique that does not
-	  // use indirect eval (which violates Content Security Policy).
-	  typeof global === "object" ? global :
-	  typeof window === "object" ? window :
-	  typeof self === "object" ? self : this
-	);
-
-	/* WEBPACK VAR INJECTION */}.call(exports, (function() { return this; }()), __webpack_require__(2)))
-
-/***/ },
+/***/ (function(module, exports) {
+
+// Copyright Joyent, Inc. and other Node contributors.
+//
+// Permission is hereby granted, free of charge, to any person obtaining a
+// copy of this software and associated documentation files (the
+// "Software"), to deal in the Software without restriction, including
+// without limitation the rights to use, copy, modify, merge, publish,
+// distribute, sublicense, and/or sell copies of the Software, and to permit
+// persons to whom the Software is furnished to do so, subject to the
+// following conditions:
+//
+// The above copyright notice and this permission notice shall be included
+// in all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+// NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+// DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+// OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
+// USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+function EventEmitter() {
+  this._events = this._events || {};
+  this._maxListeners = this._maxListeners || undefined;
+}
+module.exports = EventEmitter;
+
+// Backwards-compat with node 0.10.x
+EventEmitter.EventEmitter = EventEmitter;
+
+EventEmitter.prototype._events = undefined;
+EventEmitter.prototype._maxListeners = undefined;
+
+// By default EventEmitters will print a warning if more than 10 listeners are
+// added to it. This is a useful default which helps finding memory leaks.
+EventEmitter.defaultMaxListeners = 10;
+
+// Obviously not all Emitters should be limited to 10. This function allows
+// that to be increased. Set to zero for unlimited.
+EventEmitter.prototype.setMaxListeners = function(n) {
+  if (!isNumber(n) || n < 0 || isNaN(n))
+    throw TypeError('n must be a positive number');
+  this._maxListeners = n;
+  return this;
+};
+
+EventEmitter.prototype.emit = function(type) {
+  var er, handler, len, args, i, listeners;
+
+  if (!this._events)
+    this._events = {};
+
+  // If there is no 'error' event listener then throw.
+  if (type === 'error') {
+    if (!this._events.error ||
+        (isObject(this._events.error) && !this._events.error.length)) {
+      er = arguments[1];
+      if (er instanceof Error) {
+        throw er; // Unhandled 'error' event
+      } else {
+        // At least give some kind of context to the user
+        var err = new Error('Uncaught, unspecified "error" event. (' + er + ')');
+        err.context = er;
+        throw err;
+      }
+    }
+  }
+
+  handler = this._events[type];
+
+  if (isUndefined(handler))
+    return false;
+
+  if (isFunction(handler)) {
+    switch (arguments.length) {
+      // fast cases
+      case 1:
+        handler.call(this);
+        break;
+      case 2:
+        handler.call(this, arguments[1]);
+        break;
+      case 3:
+        handler.call(this, arguments[1], arguments[2]);
+        break;
+      // slower
+      default:
+        args = Array.prototype.slice.call(arguments, 1);
+        handler.apply(this, args);
+    }
+  } else if (isObject(handler)) {
+    args = Array.prototype.slice.call(arguments, 1);
+    listeners = handler.slice();
+    len = listeners.length;
+    for (i = 0; i < len; i++)
+      listeners[i].apply(this, args);
+  }
+
+  return true;
+};
+
+EventEmitter.prototype.addListener = function(type, listener) {
+  var m;
+
+  if (!isFunction(listener))
+    throw TypeError('listener must be a function');
+
+  if (!this._events)
+    this._events = {};
+
+  // To avoid recursion in the case that type === "newListener"! Before
+  // adding it to the listeners, first emit "newListener".
+  if (this._events.newListener)
+    this.emit('newListener', type,
+              isFunction(listener.listener) ?
+              listener.listener : listener);
+
+  if (!this._events[type])
+    // Optimize the case of one listener. Don't need the extra array object.
+    this._events[type] = listener;
+  else if (isObject(this._events[type]))
+    // If we've already got an array, just append.
+    this._events[type].push(listener);
+  else
+    // Adding the second element, need to change to array.
+    this._events[type] = [this._events[type], listener];
+
+  // Check for listener leak
+  if (isObject(this._events[type]) && !this._events[type].warned) {
+    if (!isUndefined(this._maxListeners)) {
+      m = this._maxListeners;
+    } else {
+      m = EventEmitter.defaultMaxListeners;
+    }
+
+    if (m && m > 0 && this._events[type].length > m) {
+      this._events[type].warned = true;
+      console.error('(node) warning: possible EventEmitter memory ' +
+                    'leak detected. %d listeners added. ' +
+                    'Use emitter.setMaxListeners() to increase limit.',
+                    this._events[type].length);
+      if (typeof console.trace === 'function') {
+        // not supported in IE 10
+        console.trace();
+      }
+    }
+  }
+
+  return this;
+};
+
+EventEmitter.prototype.on = EventEmitter.prototype.addListener;
+
+EventEmitter.prototype.once = function(type, listener) {
+  if (!isFunction(listener))
+    throw TypeError('listener must be a function');
+
+  var fired = false;
+
+  function g() {
+    this.removeListener(type, g);
+
+    if (!fired) {
+      fired = true;
+      listener.apply(this, arguments);
+    }
+  }
+
+  g.listener = listener;
+  this.on(type, g);
+
+  return this;
+};
+
+// emits a 'removeListener' event iff the listener was removed
+EventEmitter.prototype.removeListener = function(type, listener) {
+  var list, position, length, i;
+
+  if (!isFunction(listener))
+    throw TypeError('listener must be a function');
+
+  if (!this._events || !this._events[type])
+    return this;
+
+  list = this._events[type];
+  length = list.length;
+  position = -1;
+
+  if (list === listener ||
+      (isFunction(list.listener) && list.listener === listener)) {
+    delete this._events[type];
+    if (this._events.removeListener)
+      this.emit('removeListener', type, listener);
+
+  } else if (isObject(list)) {
+    for (i = length; i-- > 0;) {
+      if (list[i] === listener ||
+          (list[i].listener && list[i].listener === listener)) {
+        position = i;
+        break;
+      }
+    }
+
+    if (position < 0)
+      return this;
+
+    if (list.length === 1) {
+      list.length = 0;
+      delete this._events[type];
+    } else {
+      list.splice(position, 1);
+    }
+
+    if (this._events.removeListener)
+      this.emit('removeListener', type, listener);
+  }
+
+  return this;
+};
+
+EventEmitter.prototype.removeAllListeners = function(type) {
+  var key, listeners;
+
+  if (!this._events)
+    return this;
+
+  // not listening for removeListener, no need to emit
+  if (!this._events.removeListener) {
+    if (arguments.length === 0)
+      this._events = {};
+    else if (this._events[type])
+      delete this._events[type];
+    return this;
+  }
+
+  // emit removeListener for all listeners on all events
+  if (arguments.length === 0) {
+    for (key in this._events) {
+      if (key === 'removeListener') continue;
+      this.removeAllListeners(key);
+    }
+    this.removeAllListeners('removeListener');
+    this._events = {};
+    return this;
+  }
+
+  listeners = this._events[type];
+
+  if (isFunction(listeners)) {
+    this.removeListener(type, listeners);
+  } else if (listeners) {
+    // LIFO order
+    while (listeners.length)
+      this.removeListener(type, listeners[listeners.length - 1]);
+  }
+  delete this._events[type];
+
+  return this;
+};
+
+EventEmitter.prototype.listeners = function(type) {
+  var ret;
+  if (!this._events || !this._events[type])
+    ret = [];
+  else if (isFunction(this._events[type]))
+    ret = [this._events[type]];
+  else
+    ret = this._events[type].slice();
+  return ret;
+};
+
+EventEmitter.prototype.listenerCount = function(type) {
+  if (this._events) {
+    var evlistener = this._events[type];
+
+    if (isFunction(evlistener))
+      return 1;
+    else if (evlistener)
+      return evlistener.length;
+  }
+  return 0;
+};
+
+EventEmitter.listenerCount = function(emitter, type) {
+  return emitter.listenerCount(type);
+};
+
+function isFunction(arg) {
+  return typeof arg === 'function';
+}
+
+function isNumber(arg) {
+  return typeof arg === 'number';
+}
+
+function isObject(arg) {
+  return typeof arg === 'object' && arg !== null;
+}
+
+function isUndefined(arg) {
+  return arg === void 0;
+}
+
+
+/***/ }),
 /* 2 */
-/***/ function(module, exports) {
+/***/ (function(module, exports, __webpack_require__) {
 
-	// shim for using process in browser
+"use strict";
 
-	var process = module.exports = {};
-	var queue = [];
-	var draining = false;
-	var currentQueue;
-	var queueIndex = -1;
-
-	function cleanUpNextTick() {
-	    draining = false;
-	    if (currentQueue.length) {
-	        queue = currentQueue.concat(queue);
-	    } else {
-	        queueIndex = -1;
-	    }
-	    if (queue.length) {
-	        drainQueue();
-	    }
-	}
-
-	function drainQueue() {
-	    if (draining) {
-	        return;
-	    }
-	    var timeout = setTimeout(cleanUpNextTick);
-	    draining = true;
-
-	    var len = queue.length;
-	    while(len) {
-	        currentQueue = queue;
-	        queue = [];
-	        while (++queueIndex < len) {
-	            if (currentQueue) {
-	                currentQueue[queueIndex].run();
-	            }
-	        }
-	        queueIndex = -1;
-	        len = queue.length;
-	    }
-	    currentQueue = null;
-	    draining = false;
-	    clearTimeout(timeout);
-	}
-
-	process.nextTick = function (fun) {
-	    var args = new Array(arguments.length - 1);
-	    if (arguments.length > 1) {
-	        for (var i = 1; i < arguments.length; i++) {
-	            args[i - 1] = arguments[i];
-	        }
-	    }
-	    queue.push(new Item(fun, args));
-	    if (queue.length === 1 && !draining) {
-	        setTimeout(drainQueue, 0);
-	    }
-	};
-
-	// v8 likes predictible objects
-	function Item(fun, array) {
-	    this.fun = fun;
-	    this.array = array;
-	}
-	Item.prototype.run = function () {
-	    this.fun.apply(null, this.array);
-	};
-	process.title = 'browser';
-	process.browser = true;
-	process.env = {};
-	process.argv = [];
-	process.version = ''; // empty string to avoid regexp issues
-	process.versions = {};
-
-	function noop() {}
-
-	process.on = noop;
-	process.addListener = noop;
-	process.once = noop;
-	process.off = noop;
-	process.removeListener = noop;
-	process.removeAllListeners = noop;
-	process.emit = noop;
-
-	process.binding = function (name) {
-	    throw new Error('process.binding is not supported');
-	};
-
-	process.cwd = function () { return '/' };
-	process.chdir = function (dir) {
-	    throw new Error('process.chdir is not supported');
-	};
-	process.umask = function() { return 0; };
+// Origin from window.fetch polyfill
+// https://github.com/github/fetch
+// License https://github.com/github/fetch/blob/master/LICENSE
+Object.defineProperty(exports, "__esModule", { value: true });
+const COFetch = (input, init = {}) => {
+    let request;
+    if (Request.prototype.isPrototypeOf(input) && !init) {
+        request = input;
+    }
+    else {
+        request = new Request(input, init);
+    }
+    const headers = Object.assign({}, request.headers);
+    if (request.credentials === 'include') {
+        headers['Cookie'] = document.cookie;
+    }
+    const onload = (resolve, reject, gmxhr) => {
+        const init = {
+            url: gmxhr.finalUrl || request.url,
+            status: gmxhr.status,
+            statusText: gmxhr.statusText,
+            headers: undefined
+        };
+        try {
+            const rawHeaders = gmxhr.responseHeaders.trim().replace(/\r\n(\s+)/g, '$1').split('\r\n').map(e => e.split(/:/));
+            const header = new Headers();
+            rawHeaders.forEach(e => {
+                header.append(e[0].trim(), e[1].trim());
+            });
+            init.headers = header;
+            const res = new Response(gmxhr.response, init);
+            resolve(res);
+        }
+        catch (e) {
+            reject(e);
+        }
+    };
+    const onerror = (resolve, reject, gmxhr) => {
+        reject(new TypeError('Network request failed'));
+    };
+    return new Promise((resolve, reject) => {
+        GM_xmlhttpRequest({
+            method: request.method,
+            url: request.url,
+            headers: headers,
+            responseType: 'blob',
+            data: init.body,
+            onload: onload.bind(null, resolve, reject),
+            onerror: onerror.bind(null, resolve, reject)
+        });
+    });
+};
+exports.default = COFetch;
 
 
-/***/ },
+/***/ }),
 /* 3 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-
-	Object.defineProperty(exports, "__esModule", {
-	  value: true
-	});
-
-	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-
-	var _queue = __webpack_require__(4);
-
-	var _queue2 = _interopRequireDefault(_queue);
-
-	var _cofetch = __webpack_require__(5);
-
-	var _cofetch2 = _interopRequireDefault(_cofetch);
-
-	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-	function _asyncToGenerator(fn) { return function () { var gen = fn.apply(this, arguments); return new Promise(function (resolve, reject) { function step(key, arg) { try { var info = gen[key](arg); var value = info.value; } catch (error) { reject(error); return; } if (info.done) { resolve(value); } else { return Promise.resolve(value).then(function (value) { return step("next", value); }, function (err) { return step("throw", err); }); } } return step("next"); }); }; }
-
-	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-	var ehRetriever = function () {
-	  function ehRetriever(url, html) {
-	    _classCallCheck(this, ehRetriever);
-
-	    if (typeof url !== 'string') throw new TypeError('invalid `url`, expected a string');
-	    if (url.search(/^https?:\/\//) < 0) throw new TypeError('invalid url: ' + url);
-
-	    this.url = url;
-	    this.html = html;
-	    this.gallery = {
-	      'gid': undefined,
-	      'token': undefined
-	    };
-	    this.referer = url;
-	    this.showkey = undefined;
-	    this.exprefix = url.search(/exhentai/) >= 0 ? 'ex' : 'e-';
-	    this.pages = [];
-	    this.q = new _queue2.default(3, { 'timeout': 3000, 'delay': 1000 });
-	    this.onPageLoadCallback = [];
-
-	    this.promiseInit = this.init();
-	  }
-
-	  _createClass(ehRetriever, [{
-	    key: 'init',
-	    value: function () {
-	      var ref = _asyncToGenerator(regeneratorRuntime.mark(function _callee() {
-	        var galleryURL, showkey;
-	        return regeneratorRuntime.wrap(function _callee$(_context) {
-	          while (1) {
-	            switch (_context.prev = _context.next) {
-	              case 0:
-	                if (this.html) {
-	                  _context.next = 4;
-	                  break;
-	                }
-
-	                _context.next = 3;
-	                return this.fetch(this.url).then(function (res) {
-	                  return res.text();
-	                });
-
-	              case 3:
-	                this.html = _context.sent;
-
-	              case 4:
-	                galleryURL = this.html.match(/hentai\.org\/g\/(\d+)\/([a-z0-9]+)/i);
-	                showkey = this.html.match(/showkey="([^"]+)"/i);
-
-	                if (!galleryURL) {
-	                  _context.next = 11;
-	                  break;
-	                }
-
-	                this.gallery.gid = galleryURL[1];
-	                this.gallery.token = galleryURL[2];
-	                _context.next = 12;
-	                break;
-
-	              case 11:
-	                throw new Error("Can't get gallery URL");
-
-	              case 12:
-	                if (!showkey) {
-	                  _context.next = 16;
-	                  break;
-	                }
-
-	                this.showkey = showkey[1];
-	                _context.next = 17;
-	                break;
-
-	              case 16:
-	                throw new Error("Can't get showkey");
-
-	              case 17:
-	                _context.next = 19;
-	                return this.getAllPageURL();
-
-	              case 19:
-	                this.pages = _context.sent;
-
-	              case 20:
-	              case 'end':
-	                return _context.stop();
-	            }
-	          }
-	        }, _callee, this);
-	      }));
-
-	      function init() {
-	        return ref.apply(this, arguments);
-	      }
-
-	      return init;
-	    }()
-	  }, {
-	    key: 'getAllPageURL',
-	    value: function () {
-	      var ref = _asyncToGenerator(regeneratorRuntime.mark(function _callee2() {
-	        var _this = this;
-
-	        var firstPage, pageNum, pageNumMax, allPages;
-	        return regeneratorRuntime.wrap(function _callee2$(_context2) {
-	          while (1) {
-	            switch (_context2.prev = _context2.next) {
-	              case 0:
-	                _context2.next = 2;
-	                return this.fetch('http://' + this.exprefix + 'hentai.org/g/' + this.gallery.gid + '/' + this.gallery.token).then(function (res) {
-	                  return res.text();
-	                });
-
-	              case 2:
-	                firstPage = _context2.sent;
-	                pageNum = firstPage.match(/<table[^>]*class="ptt"[^>]*>((?:[^<]*)(?:<(?!\/table>)[^<]*)*)<\/table>/);
-
-	                if (!pageNum) {
-	                  _context2.next = 8;
-	                  break;
-	                }
-
-	                pageNum = pageNum[1].match(/g\/[^/]+\/[^/]+\/\?p=\d+/g);
-	                _context2.next = 9;
-	                break;
-
-	              case 8:
-	                throw new Error('Cant get page numbers');
-
-	              case 9:
-
-	                // A gallery containing only one page won't have page number in gallery link.
-	                // So, if pageNum is null, the gallery has only one page.
-	                if (pageNum) {
-	                  pageNum = pageNum.map(function (e) {
-	                    return parseInt(e.match(/(\d+)$/)[1], 10);
-	                  });
-	                }
-	                pageNumMax = pageNum ? Math.max.apply(null, pageNum) : 0;
-	                _context2.next = 13;
-	                return Promise.all(Array(pageNumMax).fill().map(function (e, i) {
-	                  return _this.fetch('http://' + _this.exprefix + 'hentai.org/g/' + _this.gallery.gid + '/' + _this.gallery.token + '/?p=' + (i + 1)).then(function (res) {
-	                    return res.text();
-	                  });
-	                }));
-
-	              case 13:
-	                allPages = _context2.sent;
-
-	                allPages.unshift(firstPage);
-
-	                return _context2.abrupt('return', allPages.map(function (e) {
-	                  return e.match(/<div[^>]*class="gdt[lm]"[^>]*>(?:(?:[^<]*)(?:<(?!\/div>)[^<]*)*)<\/div>/g);
-	                }).reduce(function (p, c) {
-	                  return p.concat(c);
-	                }).map(function (e) {
-	                  var tokens = e.match(/s\/[a-z0-9]+\/\d+-\d+/)[0].split('/');
-	                  return {
-	                    'imgkey': tokens[1],
-	                    'page': parseInt(tokens[2].split('-')[1], 10)
-	                  };
-	                }));
-
-	              case 16:
-	              case 'end':
-	                return _context2.stop();
-	            }
-	          }
-	        }, _callee2, this);
-	      }));
-
-	      function getAllPageURL() {
-	        return ref.apply(this, arguments);
-	      }
-
-	      return getAllPageURL;
-	    }()
-	  }, {
-	    key: 'fetch',
-	    value: function fetch(url) {
-	      var options = arguments.length <= 1 || arguments[1] === undefined ? {} : arguments[1];
-
-	      if (typeof url !== 'string') return Promise.reject(new TypeError('invalid `url`, expected a string'));
-	      if (url.search(/^https?:\/\//) < 0) return Promise.reject(new TypeError('invalid url: ' + url));
-
-	      var defaultOptions = {
-	        'method': 'GET',
-	        'credentials': 'include',
-	        'headers': {
-	          'User-Agent': navigator.userAgent,
-	          'Referer': this.referer
-	        }
-	      };
-	      if (options.headers) {
-	        Object.assign(defaultOptions.headers, options.headers);
-	        delete options.headers;
-	      }
-	      options = Object.assign(defaultOptions, options);
-	      console.log('fetch', url, options);
-
-	      return this.q.queue(function (resolve, reject) {
-	        (0, _cofetch2.default)(url, options).then(resolve).catch(reject);
-	      }, 'fetch ' + url);
-	    }
-	  }, {
-	    key: 'retrieve',
-	    value: function () {
-	      var ref = _asyncToGenerator(regeneratorRuntime.mark(function _callee3() {
-	        var _this2 = this;
-
-	        var start = arguments.length <= 0 || arguments[0] === undefined ? 0 : arguments[0];
-	        var stop = arguments.length <= 1 || arguments[1] === undefined ? -1 : arguments[1];
-	        var retrievePages, loadPage, imagePages, imageInfo;
-	        return regeneratorRuntime.wrap(function _callee3$(_context3) {
-	          while (1) {
-	            switch (_context3.prev = _context3.next) {
-	              case 0:
-	                _context3.next = 2;
-	                return this.promiseInit;
-
-	              case 2:
-	                if (!(start < 0 || start >= this.pages.length || isNaN(start))) {
-	                  _context3.next = 4;
-	                  break;
-	                }
-
-	                throw new RangeError('invalid start number: ' + start);
-
-	              case 4:
-	                if (!(stop < 0)) {
-	                  _context3.next = 8;
-	                  break;
-	                }
-
-	                stop = this.pages.length - 1;
-	                _context3.next = 10;
-	                break;
-
-	              case 8:
-	                if (!(stop < start || stop >= this.pages.length || isNaN(stop))) {
-	                  _context3.next = 10;
-	                  break;
-	                }
-
-	                throw new RangeError('invalid stop number: ' + stop + ', start: ' + start);
-
-	              case 10:
-	                retrievePages = this.pages.slice(start, stop + 1);
-
-	                loadPage = function loadPage(e) {
-	                  if (e.imgsrc && img.filename) return Promise.resolve(e);
-
-	                  var fetchPage = _this2.fetch('http://' + _this2.exprefix + 'hentai.org/api.php', {
-	                    'method': 'POST',
-	                    'headers': { 'Content-Type': 'application/json' },
-	                    // assign e = {'imgkey': ..., 'page': ...} to object literal {'method': ..., 'gid': ..., 'showkey': ...}
-	                    // does not modify e
-	                    'data': JSON.stringify(Object.assign({
-	                      'method': 'showpage',
-	                      'gid': _this2.gallery.gid,
-	                      'showkey': _this2.showkey
-	                    }, e))
-	                  }).then(function (res) {
-	                    return res.json();
-	                  });
-
-	                  return fetchPage.then(function (data) {
-	                    // insert callback invocations
-	                    _this2.onPageLoadCallback.forEach(function (callback) {
-	                      callback(e.page - start, stop - start + 1);
-	                    });
-	                    return Promise.resolve(data);
-	                  });
-	                };
-
-	                _context3.next = 14;
-	                return Promise.all(retrievePages.map(function (e) {
-	                  return loadPage(e);
-	                }));
-
-	              case 14:
-	                imagePages = _context3.sent;
-	                imageInfo = imagePages.map(function (e) {
-	                  return {
-	                    'filename': e.i.match(/>([^:]+):/)[1].trim(),
-	                    'imgsrc': e.i3.match(/src="([^"]+)"/)[1],
-	                    'failnl': [e.i6.match(/nl\('([^']+)'/)[1]],
-	                    'style': e.i3.match(/style="([^"]+)"/)[1],
-	                    'url': e.s
-	                  };
-	                });
-
-
-	                retrievePages.forEach(function (e, i) {
-	                  return Object.assign(e, imageInfo[i]);
-	                });
-
-	                return _context3.abrupt('return', retrievePages);
-
-	              case 18:
-	              case 'end':
-	                return _context3.stop();
-	            }
-	          }
-	        }, _callee3, this);
-	      }));
-
-	      function retrieve(_x2, _x3) {
-	        return ref.apply(this, arguments);
-	      }
-
-	      return retrieve;
-	    }()
-	  }, {
-	    key: 'fail',
-	    value: function () {
-	      var ref = _asyncToGenerator(regeneratorRuntime.mark(function _callee4(index) {
-	        var page, failnl, res, parsed;
-	        return regeneratorRuntime.wrap(function _callee4$(_context4) {
-	          while (1) {
-	            switch (_context4.prev = _context4.next) {
-	              case 0:
-	                page = this.pages[index - 1];
-	                failnl = page.failnl.map(function (e) {
-	                  return 'nl=' + e;
-	                }).join('&');
-	                _context4.next = 4;
-	                return this.fetch('http://' + this.exprefix + 'hentai.org/' + page.url + '?' + failnl).then(function (res) {
-	                  return res.text();
-	                });
-
-	              case 4:
-	                res = _context4.sent;
-	                parsed = res.match(/<img[^>]*id="img"[^>]*src="([^"]+)"[^>]*.*onclick="return nl\('([0-9-]+)'\)/i);
-
-	                if (!parsed) {
-	                  _context4.next = 10;
-	                  break;
-	                }
-
-	                page.imgsrc = parsed[1];
-	                page.failnl.push(parsed[2]);
-
-	                return _context4.abrupt('return', page);
-
-	              case 10:
-	                return _context4.abrupt('return', null);
-
-	              case 11:
-	              case 'end':
-	                return _context4.stop();
-	            }
-	          }
-	        }, _callee4, this);
-	      }));
-
-	      function fail(_x6) {
-	        return ref.apply(this, arguments);
-	      }
-
-	      return fail;
-	    }()
-	  }, {
-	    key: 'onPageLoad',
-	    value: function onPageLoad(callback) {
-	      this.onPageLoadCallback.push(callback);
-	    }
-	  }]);
-
-	  return ehRetriever;
-	}();
-
-	exports.default = ehRetriever;
-
-/***/ },
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+;
+class Queue {
+    constructor(limit, timeout = 0, delay = 0) {
+        this.limit = limit;
+        this.timeout = timeout;
+        this.delay = delay;
+        this.slot = [];
+        this.q = [];
+    }
+    queue(executor, name) {
+        const job = new Promise((resolve, reject) => {
+            this.q.push({
+                name,
+                run: executor,
+                resolve,
+                reject,
+                isTimeout: false,
+                timeoutId: undefined
+            });
+        });
+        console.log(`queue: job ${name} queued`);
+        this.dequeue();
+        return job;
+    }
+    dequeue() {
+        const { q, slot, limit, timeout, delay } = this;
+        if (slot.length < limit && q.length >= 1) {
+            const job = q.shift();
+            slot.push(job);
+            console.log(`queue: job ${job.name} started`);
+            if (timeout) {
+                job.timeoutId = window.setTimeout(() => this.jobTimeout(job), timeout);
+            }
+            const onFulfilled = (data) => {
+                if (job.isTimeout) {
+                    return;
+                }
+                this.removeJob(job);
+                window.setTimeout(() => this.dequeue(), delay); // force dequeue() run after current dequeue()
+                if (job.timeoutId) {
+                    window.clearTimeout(job.timeoutId);
+                }
+                console.log(`queue: job ${job.name} resolved`);
+                job.resolve(data);
+            };
+            const onRejected = (reason) => {
+                if (job.isTimeout) {
+                    return;
+                }
+                this.removeJob(job);
+                setTimeout(() => this.dequeue(), delay);
+                if (job.timeoutId) {
+                    window.clearTimeout(job.timeoutId);
+                }
+                console.log(`queue: job ${job.name} rejected`);
+                job.reject(reason);
+            };
+            job.run(onFulfilled, onRejected);
+        }
+    }
+    jobTimeout(job) {
+        this.removeJob(job);
+        console.log(`queue: job ${job.name} timeout`);
+        job.reject(new Error(`queue: job ${job.name} timeout`));
+        job = null;
+    }
+    removeJob(job) {
+        let index = this.slot.indexOf(job);
+        if (index >= 0) {
+            this.slot.splice(index, 1);
+            return;
+        }
+        index = this.q.indexOf(job);
+        if (index >= 0) {
+            this.q.splice(index, 1);
+        }
+    }
+}
+exports.default = Queue;
+
+
+/***/ }),
 /* 4 */
-/***/ function(module, exports) {
+/***/ (function(module, exports, __webpack_require__) {
 
-	'use strict';
+"use strict";
 
-	Object.defineProperty(exports, "__esModule", {
-	  value: true
-	});
+Object.defineProperty(exports, "__esModule", { value: true });
+const ehretriever_1 = __webpack_require__(0);
+const LoadTimeout = 10000;
+const AutoReload = true;
+// helper functions
+const $ = (selector) => document.querySelector(selector);
+const $$ = (selector) => Array.from(document.querySelectorAll(selector));
+const buttonsFragment = document.createDocumentFragment();
+const buttonDoubleFrame = document.createElement('button');
+const buttonRetrieve = document.createElement('button');
+const buttonRange = document.createElement('button');
+buttonsFragment.appendChild(buttonDoubleFrame);
+buttonsFragment.appendChild(buttonRetrieve);
+buttonsFragment.appendChild(buttonRange);
+buttonDoubleFrame.textContent = 'Double Frame';
+buttonRetrieve.textContent = 'Retrieve!';
+buttonRange.textContent = 'Set Range';
+$('#i1').insertBefore(buttonsFragment, $('#i2'));
+let ehentaiResize;
+let maxImageWidth;
+let originalWidth;
+buttonDoubleFrame.addEventListener('click', event => {
+    if (!ehentaiResize) {
+        try {
+            ehentaiResize = unsafeWindow.onresize;
+        }
+        catch (e) {
+            console.log(e);
+        }
+    }
+    if (!maxImageWidth) {
+        maxImageWidth = Math.max.apply(null, $$('#i3 a img').map(e => parseInt(e.style.width, 10)));
+    }
+    if (!originalWidth) {
+        originalWidth = parseInt($('#i1').style.width, 10);
+    }
+    if (buttonDoubleFrame.textContent === 'Double Frame') {
+        buttonDoubleFrame.textContent = 'Reset Frame';
+        try {
+            unsafeWindow.onresize = null;
+        }
+        catch (e) {
+            console.log(e);
+        }
+        ;
+        $('#i1').style.maxWidth = (maxImageWidth * 2 + 20) + 'px';
+        $('#i1').style.width = (maxImageWidth * 2 + 20) + 'px';
+    }
+    else {
+        buttonDoubleFrame.textContent = 'Double Frame';
+        try {
+            unsafeWindow.onresize = ehentaiResize;
+            ehentaiResize();
+        }
+        catch (e) {
+            console.log(e);
+            $('#i1').style.maxWidth = originalWidth + 'px';
+            $('#i1').style.width = originalWidth + 'px';
+        }
+    }
+});
+let ehr;
+buttonRetrieve.addEventListener('click', event => {
+    buttonRetrieve.setAttribute('disabled', '');
+    buttonRange.setAttribute('disabled', '');
+    buttonRetrieve.textContent = 'Initializing...';
+    if (!ehr) {
+        ehr = new ehretriever_1.EhRetriever(location.href, document.body.innerHTML);
+        console.log(ehr);
+    }
+    ehr.on('load', (progress) => {
+        buttonRetrieve.textContent = `${progress.current}/${progress.total}`;
+    });
+    let retrieve;
+    if ($('#ehrstart')) {
+        const start = parseInt($('#ehrstart').value, 10);
+        const stop = parseInt($('#ehrstop').value, 10);
+        const pageNumMax = parseInt($('div.sn').textContent.match(/\/\s*(\d+)/)[1], 10);
+        if (stop < start || start <= 0 || start > pageNumMax || stop > pageNumMax) {
+            window.alert(`invalid range: ${start} - ${stop}, accepted range: 1 - ${pageNumMax}`);
+            buttonRetrieve.textContent = 'Retrieve!';
+            buttonRetrieve.removeAttribute('disabled');
+            return;
+        }
+        retrieve = ehr.retrieve(start - 1, stop - 1);
+        $('#ehrsetrange').parentNode.removeChild($('#ehrsetrange'));
+    }
+    else {
+        retrieve = ehr.retrieve();
+        buttonRange.parentNode.removeChild(buttonRange);
+    }
+    retrieve.then(pages => {
+        $('#i3 a').style.display = 'none';
+        const reload = (event) => {
+            event.stopPropagation();
+            event.preventDefault();
+            const target = event.target;
+            if (target.dataset.locked === 'true') {
+                return;
+            }
+            target.dataset.locked = 'true';
+            ehr.fail(parseInt(target.dataset.page, 10)).then(imgInfo => {
+                target.src = imgInfo.imgsrc;
+                target.parentNode.href = imgInfo.imgsrc;
+                target.dataset.locked = 'false';
+            });
+        };
+        pages.forEach(e => {
+            const pageNode = document.createElement('a');
+            pageNode.setAttribute('href', e.imgsrc);
+            pageNode.innerHTML = `<img src="${e.imgsrc}" style="${e.style}" />`;
+            $('#i3').appendChild(pageNode);
+            const imgNode = pageNode.childNodes[0];
+            imgNode.dataset.page = e.page.toString();
+            imgNode.dataset.locked = 'false';
+            imgNode.addEventListener('error', reload);
+            imgNode.addEventListener('click', reload);
+            let timeout;
+            if (AutoReload) {
+                timeout = window.setTimeout(() => {
+                    console.log(`timeout: page ${e.page}`);
+                    const clickEvent = new MouseEvent('click');
+                    imgNode.dispatchEvent(clickEvent);
+                }, LoadTimeout);
+            }
+            imgNode.addEventListener('load', function onload() {
+                pageNode.removeEventListener('load', onload);
+                if (AutoReload) {
+                    clearTimeout(timeout);
+                }
+            });
+        });
+        buttonRetrieve.textContent = 'Done!';
+        buttonDoubleFrame.removeAttribute('disabled');
+    }).catch(e => { console.log(e); });
+});
+buttonRange.addEventListener('click', event => {
+    // override e-hentai's viewing shortcut
+    document.onkeydown = undefined;
+    const pageNum = $('div.sn').textContent.match(/(\d+)\s*\/\s*(\d+)/).slice(1);
+    buttonRange.insertAdjacentHTML('afterend', `<span id="ehrsetrange"><input type="number" id="ehrstart" value="${pageNum[0]}" min="1" max="${pageNum[1]}"> - <input type="number" id="ehrstop" value="${pageNum[1]}" min="1" max="${pageNum[1]}"></span>`);
+    buttonRange.parentNode.removeChild(buttonRange);
+});
 
-	var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj; };
 
-	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-
-	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-	var Queue = function () {
-	  function Queue(limit) {
-	    _classCallCheck(this, Queue);
-
-	    var timeout = void 0,
-	        delay = void 0;
-
-	    for (var _len = arguments.length, options = Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
-	      options[_key - 1] = arguments[_key];
-	    }
-
-	    if (options.length) {
-	      if (_typeof(options[0]) === 'object') {
-	        var _options$ = options[0];
-	        timeout = _options$.timeout;
-	        delay = _options$.delay;
-	      } else {
-	        timeout = options[0];
-	        delay = options[1];
-	      }
-	    }
-
-	    this.limit = limit;
-	    this.timeout = timeout || 0;
-	    this.delay = delay || 0;
-	    this.slot = [];
-	    this.q = [];
-	  }
-
-	  _createClass(Queue, [{
-	    key: 'queue',
-	    value: function queue(executor, name) {
-	      var _this = this;
-
-	      console.log('queue: job ' + name + ' queued');
-
-	      var job = new Promise(function (resolve, reject) {
-	        _this.q.push({
-	          'name': name || '',
-	          'run': executor,
-	          'resolve': resolve,
-	          'reject': reject,
-	          'timeout': false,
-	          'timeoutid': undefined
-	        });
-	      });
-	      this.dequeue();
-
-	      return job;
-	    }
-	  }, {
-	    key: 'dequeue',
-	    value: function dequeue() {
-	      var _this2 = this;
-
-	      var q = this.q;
-	      var slot = this.slot;
-	      var limit = this.limit;
-	      var timeout = this.timeout;
-	      var delay = this.delay;
-
-
-	      if (slot.length < limit && q.length >= 1) {
-	        (function () {
-	          var job = q.shift();
-	          slot.push(job);
-	          console.log('queue: job ' + job.name + ' started');
-
-	          if (timeout) job.timeoutid = setTimeout(_this2.jobTimeout.bind(_this2, job), timeout);
-
-	          var onFulfilled = function onFulfilled(data) {
-	            if (job.timeout) {
-	              return;
-	            }
-
-	            _this2.removeJob(job);
-	            setTimeout(_this2.dequeue.bind(_this2), delay); // force dequeue() run after current dequeue()
-	            if (job.timeoutid) clearTimeout(job.timeoutid);
-	            console.log('queue: job ' + job.name + ' resolved');
-
-	            job.resolve(data);
-	          };
-
-	          var onRejected = function onRejected(reason) {
-	            if (job.timeout) {
-	              return;
-	            }
-
-	            _this2.removeJob(job);
-	            setTimeout(_this2.dequeue.bind(_this2), delay);
-	            if (job.timeoutid) clearTimeout(job.timeoutid);
-	            console.log('queue: job ' + job.name + ' rejected');
-
-	            job.reject(reason);
-	          };
-
-	          job.run(onFulfilled, onRejected);
-	        })();
-	      }
-	    }
-	  }, {
-	    key: 'jobTimeout',
-	    value: function jobTimeout(job) {
-	      this.removeJob(job);
-	      console.log('queue: job ' + job.name + ' timeout');
-	      job.reject(new Error('queue: job ' + (job.name || '') + ' timeout'));
-	      job = null;
-	    }
-	  }, {
-	    key: 'removeJob',
-	    value: function removeJob(job) {
-	      var index = this.slot.indexOf(job);
-	      if (index >= 0) {
-	        this.slot.splice(index, 1);
-	        return;
-	      }
-
-	      index = this.q.indexOf(job);
-	      if (index >= 0) this.q.splice(index, 1);
-	    }
-	  }]);
-
-	  return Queue;
-	}();
-
-	exports.default = Queue;
-
-/***/ },
-/* 5 */
-/***/ function(module, exports) {
-
-	'use strict';
-
-	Object.defineProperty(exports, "__esModule", {
-	  value: true
-	});
-
-	var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; }();
-
-	// Origin from window.fetch polyfill
-	// https://github.com/github/fetch
-	// License https://github.com/github/fetch/blob/master/LICENSE
-
-	var COFetch = function COFetch(input) {
-	  var init = arguments.length <= 1 || arguments[1] === undefined ? {} : arguments[1];
-
-	  var request = void 0;
-	  if (Request.prototype.isPrototypeOf(input) && !init) {
-	    request = input;
-	  } else {
-	    request = new Request(input, init);
-	  }
-
-	  var headers = {};
-	  var _iteratorNormalCompletion = true;
-	  var _didIteratorError = false;
-	  var _iteratorError = undefined;
-
-	  try {
-	    for (var _iterator = request.headers[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
-	      var _step$value = _slicedToArray(_step.value, 2);
-
-	      var key = _step$value[0];
-	      var value = _step$value[1];
-
-	      headers[key] = value;
-	    }
-	  } catch (err) {
-	    _didIteratorError = true;
-	    _iteratorError = err;
-	  } finally {
-	    try {
-	      if (!_iteratorNormalCompletion && _iterator.return) {
-	        _iterator.return();
-	      }
-	    } finally {
-	      if (_didIteratorError) {
-	        throw _iteratorError;
-	      }
-	    }
-	  }
-
-	  if (request.credentials === 'include') {
-	    headers['Cookie'] = document.cookie;
-	  }
-
-	  var onload = function onload(resolve, reject, gmxhr) {
-	    var init = {
-	      'url': gmxhr.finalUrl || request.url,
-	      'status': gmxhr.status,
-	      'statusText': gmxhr.statusText,
-	      'headers': undefined
-	    };
-
-	    try {
-	      (function () {
-	        var rawHeaders = gmxhr.responseHeaders.trim().replace(/\r\n(\s+)/g, '$1').split('\r\n').map(function (e) {
-	          return e.split(/:/);
-	        });
-	        var header = new Headers();
-	        rawHeaders.forEach(function (e) {
-	          header.append(e[0].trim(), e[1].trim());
-	        });
-	        init.headers = header;
-
-	        var res = new Response(gmxhr.response, init);
-	        resolve(res);
-	      })();
-	    } catch (e) {
-	      reject(e);
-	    }
-	  };
-
-	  var onerror = function onerror(resolve, reject, gmxhr) {
-	    reject(new TypeError('Network request failed'));
-	  };
-
-	  return new Promise(function (resolve, reject) {
-	    GM_xmlhttpRequest({
-	      'method': request.method,
-	      'url': request.url,
-	      'headers': headers,
-	      'binary': init.binary,
-	      'responseType': 'blob',
-	      'data': init.data,
-	      'onload': onload.bind(null, resolve, reject),
-	      'onerror': onerror.bind(null, resolve, reject)
-	    });
-	  });
-	};
-
-	exports.default = COFetch;
-
-/***/ }
+/***/ })
 /******/ ]);

@@ -2,7 +2,7 @@ var webpack = require('webpack');
 var fs = require('fs');
 
 module.exports = {
-    entry: './src/index.js',
+    entry: './src/index.ts',
     output: {
         path: __dirname + '/build',
         filename: 'ehr.user.js'
@@ -10,16 +10,16 @@ module.exports = {
     module: {
         loaders: [
           {
-            test: /\.js$/,
+            test: /\.(?:ts|js)$/,
             exclude: /(node_modules|bower_components)/,
-            loader: 'babel',
-            query: {
-              presets: ['es2015', 'stage-3']
-            }
+            loader: 'ts-loader'
           }
         ]
     },
+    resolve: {
+      extensions: [ '.ts', '.js' ]
+    },
     plugins: [
-      new webpack.BannerPlugin(fs.readFileSync('./src/header.js', 'utf8'), { 'raw': true, 'entryOnly': true })
+      new webpack.BannerPlugin({ banner: fs.readFileSync('./src/header.js', 'utf8'), raw: true, entryOnly: true })
     ]
 };

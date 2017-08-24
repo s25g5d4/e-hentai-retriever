@@ -4,7 +4,7 @@
 // @description e-hentai & exhentai image url retriever
 // @include     /^https?:\/\/e-hentai.org\/s\/.*/
 // @include     /^https?:\/\/exhentai.org\/s\/.*/
-// @version     3.0.3
+// @version     4.0.0
 // @grant       GM_xmlhttpRequest
 // @grant       unsafeWindow
 // ==/UserScript==
