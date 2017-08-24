@@ -4,7 +4,7 @@
 
 declare function GM_xmlhttpRequest(...x: any[]): any;
 
-const COFetch = (input: string | Request, init: RequestInit = {}) => {
+export const COFetch = (input: string | Request, init: RequestInit = {}): Promise<Response> => {
   let request: Request;
   if (Request.prototype.isPrototypeOf(input) && !init) {
     request = <Request>input;

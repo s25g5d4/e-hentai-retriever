@@ -1,8 +1,3 @@
-export interface IQueueOption {
-  timeout: number;
-  delay: number;
-};
-
 interface IExecutor<T> {
   (resolve: (value?: T | PromiseLike<T>) => void, reject?: (reason?: any) => void): void;
 }
@@ -16,7 +11,7 @@ interface IQueueJob<T> {
   timeoutId?: number;
 }
 
-class Queue<T> {
+export class Queue<T> {
   limit: number;
   timeout: number;
   delay: number;
