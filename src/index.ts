@@ -1,4 +1,4 @@
-import { EhRetriever, Page } from '../lib/ehretriever';
+import { EhRetriever, IPage } from '../lib/ehretriever';
 
 declare const unsafeWindow: any;
 
@@ -87,7 +87,7 @@ buttonRetrieve.addEventListener('click', event => {
     buttonRetrieve.textContent = `${progress.current}/${progress.total}`;
   });
 
-  let retrieve: Promise<Page[]>;
+  let retrieve: Promise<IPage[]>;
 
   if ($('#ehrstart')) {
     const start = parseInt(($('#ehrstart') as HTMLInputElement).value, 10);

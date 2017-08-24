@@ -2,12 +2,12 @@ import Queue from './queue';
 import COFetch from './cofetch';
 import * as EventEmitter from 'events';
 
-interface Gallery {
+interface IGallery {
   gid: string;
   token: string;
 }
 
-export interface Page {
+export interface IPage {
   filename?: string;
   imgsrc?: string;
   failnl?: Set<string>;
@@ -17,19 +17,19 @@ export interface Page {
   page?: number;
 }
 
-interface Headers {
+interface IHeaders {
   [key: string]: string;
 }
 
 export class EhRetriever extends EventEmitter {
   url: string;
   html: string;
-  gallery: Gallery;
+  gallery: IGallery;
   referer: string;
   showkey: string;
   ehentaiHost: string;
   q: Queue<Response>;
-  pages: Promise<Page[]>;
+  pages: Promise<IPage[]>;
 
   constructor(url: string, html: string) {
     super();
@@ -55,7 +55,7 @@ export class EhRetriever extends EventEmitter {
     this.pages.then(() => this.emit('ready'));
   }
 
-  private async init(): Promise<Page[]> {
+  private async init(): Promise<IPage[]> {
       if (!this.html) {
         this.html = await this.fetch(this.url).then(res => res.text());
       }
@@ -81,7 +81,7 @@ export class EhRetriever extends EventEmitter {
       return await this.getAllPageURL();
   }
 
-  private async getAllPageURL(): Promise<Page[]> {
+  private async getAllPageURL(): Promise<IPage[]> {
     const { ehentaiHost, gallery: { gid, token } } = this;
 
     const firstPage = await this.fetch(`${ehentaiHost}/g/${gid}/${token}`).then(res => res.text());
@@ -147,8 +147,8 @@ export class EhRetriever extends EventEmitter {
     }, `Fetch ${url} ${JSON.stringify(cofetchOptions)}`);
   }
 
-  async retrieve(start = 0, stop = -1): Promise<Page[]> {
-    const pages: Page[] = await this.pages;
+  async retrieve(start = 0, stop = -1): Promise<IPage[]> {
+    const pages: IPage[] = await this.pages;
 
     if (start < 0 || start >= pages.length || isNaN(start)) {
       throw new RangeError(`invalid start number: ${start}`);
@@ -163,7 +163,7 @@ export class EhRetriever extends EventEmitter {
 
     const retrievePages = pages.slice(start, stop + 1);
 
-    const loadPage = async (e: Page): Promise<any> => {
+    const loadPage = async (e: IPage): Promise<any> => {
       if (e.imgsrc && e.filename) {
         return Promise.resolve(e);
       }
@@ -199,7 +199,7 @@ export class EhRetriever extends EventEmitter {
     return retrievePages;
   }
 
-  async fail(index: number): Promise<Page> {
+  async fail(index: number): Promise<IPage> {
     const { ehentaiHost } = this;
     const pages = await this.pages;
     const failPage = pages[index - 1];
