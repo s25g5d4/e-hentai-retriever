@@ -2,30 +2,28 @@
 // https://github.com/github/fetch
 // License https://github.com/github/fetch/blob/master/LICENSE
 
-const COFetch = (input, init = {}) => {
-  let request;
+declare function GM_xmlhttpRequest(...x: any[]): any;
+
+export const COFetch = (input: string | Request, init: RequestInit = {}): Promise<Response> => {
+  let request: Request;
   if (Request.prototype.isPrototypeOf(input) && !init) {
-    request = input;
+    request = <Request>input;
   }
   else {
     request = new Request(input, init);
   }
 
-  const headers = {};
-  for (let [key, value] of request.headers) {
-    headers[key] = value;
-  }
-
+  const headers = Object.assign({}, request.headers);
   if (request.credentials === 'include') {
     headers['Cookie'] = document.cookie;
   }
 
   const onload = (resolve, reject, gmxhr) => {
     const init = {
-      'url': gmxhr.finalUrl || request.url,
-      'status': gmxhr.status,
-      'statusText': gmxhr.statusText,
-      'headers': undefined
+      url: gmxhr.finalUrl || request.url,
+      status: gmxhr.status,
+      statusText: gmxhr.statusText,
+      headers: undefined
     };
 
     try {
@@ -33,7 +31,7 @@ const COFetch = (input, init = {}) => {
       const header = new Headers();
       rawHeaders.forEach(e => {
         header.append(e[0].trim(), e[1].trim());
-      })
+      });
       init.headers = header;
 
       const res = new Response(gmxhr.response, init);
@@ -48,16 +46,15 @@ const COFetch = (input, init = {}) => {
     reject(new TypeError('Network request failed'));
   };
 
-  return new Promise( (resolve, reject) => {
+  return new Promise<Response>( (resolve, reject) => {
     GM_xmlhttpRequest({
-      'method':       request.method,
-      'url':          request.url,
-      'headers':      headers,
-      'binary':       init.binary,
-      'responseType': 'blob',
-      'data':         init.data,
-      'onload':       onload.bind(null, resolve, reject),
-      'onerror':      onerror.bind(null, resolve, reject)
+      method:       request.method,
+      url:          request.url,
+      headers:      headers,
+      responseType: 'blob',
+      data:         init.body,
+      onload:       onload.bind(null, resolve, reject),
+      onerror:      onerror.bind(null, resolve, reject)
     });
   });
 };
