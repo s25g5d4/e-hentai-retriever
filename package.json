@@ -10,6 +10,8 @@
   },
   "dependencies": {
     "@types/node": "^8.0.24",
+    "css-loader": "^0.28.5",
+    "style-loader": "^0.18.2",
     "ts-loader": "^2.3.3",
     "typescript": "^2.4.2",
     "webpack": "^2.7.0"

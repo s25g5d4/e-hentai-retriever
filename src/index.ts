@@ -1,3 +1,4 @@
+import './style.css';
 import { EhRetriever, IPage } from '../lib/ehretriever';
 
 declare const unsafeWindow: any;
@@ -19,11 +20,71 @@ buttonsFragment.appendChild(buttonRange);
 buttonDoubleFrame.textContent = 'Double Frame';
 buttonRetrieve.textContent = 'Retrieve!';
 buttonRange.textContent = 'Set Range';
+
 $('#i1').insertBefore(buttonsFragment, $('#i2'));
 
 let ehentaiResize;
-let maxImageWidth;
-let originalWidth;
+let maxImageWidth: number;
+let originalWidth: number;
+let ehr: EhRetriever;
+let showHiddenImageLink: boolean = false;
+
+const reload = (event: Event): void => {
+  event.stopPropagation();
+  event.preventDefault();
+
+  const target = event.target as HTMLImageElement;
+  if (target.dataset.locked === 'true') {
+    return;
+  }
+
+  target.dataset.locked = 'true';
+
+  ehr.fail( parseInt(target.dataset.page, 10) ).then(imgInfo => {
+    target.src = imgInfo.imgsrc;
+    (target.parentElement as HTMLAnchorElement).href = imgInfo.imgsrc;
+    target.dataset.locked = 'false';
+  });
+};
+
+const showImage = (event: Event): void => {
+  event.stopPropagation();
+  event.preventDefault();
+
+  $$('#i3 a').forEach(e => {
+    e.classList.remove('hidden');
+  });
+  (event.target as HTMLElement).remove();
+  showHiddenImageLink = false;
+};
+
+const hideImage = (event: Event): void => {
+  event.stopPropagation();
+  event.preventDefault();
+
+  ((event.target as HTMLElement).parentElement as HTMLElement).classList.add('hidden');
+  if (!showHiddenImageLink) {
+    const showHiddenImage = document.createElement('a');
+    showHiddenImage.href = '';
+    showHiddenImage.textContent = 'show hidden image';
+    showHiddenImage.classList.add('show-hidden');
+    showHiddenImage.addEventListener('click', showImage);
+    buttonRetrieve.insertAdjacentElement('afterend', showHiddenImage);
+    showHiddenImageLink = true;
+  }
+};
+
+const swapImage = (event: Event): void => {
+  event.stopPropagation();
+  event.preventDefault();
+
+  const right = ((event.target as HTMLElement).parentElement as HTMLElement);
+  const left = (right.previousElementSibling as HTMLElement);
+  if (left) {
+    (left.parentElement as HTMLElement).insertBefore(right, left);
+  }
+};
+
 
 buttonDoubleFrame.addEventListener('click', event => {
   if (!ehentaiResize) {
@@ -71,8 +132,6 @@ buttonDoubleFrame.addEventListener('click', event => {
   }
 });
 
-let ehr: EhRetriever;
-
 buttonRetrieve.addEventListener('click', event => {
   buttonRetrieve.setAttribute('disabled', '');
   buttonRange.setAttribute('disabled', '');
@@ -83,8 +142,12 @@ buttonRetrieve.addEventListener('click', event => {
     console.log(ehr);
   }
 
+  ehr.on('ready', () => {
+    buttonRetrieve.textContent = `Ready to retrieve`;
+  })
+
   ehr.on('load', (progress: {current: number, total: number}) => {
-    buttonRetrieve.textContent = `${progress.current}/${progress.total}`;
+    buttonRetrieve.textContent = `Retrieving ${progress.current}/${progress.total}`;
   });
 
   let retrieve: Promise<IPage[]>;
@@ -102,64 +165,67 @@ buttonRetrieve.addEventListener('click', event => {
     }
 
     retrieve = ehr.retrieve(start - 1, stop - 1);
-    $('#ehrsetrange').parentNode.removeChild($('#ehrsetrange'));
+    $('#ehrsetrange').remove();
   }
   else {
     retrieve = ehr.retrieve();
-    buttonRange.parentNode.removeChild(buttonRange);
+    buttonRange.remove();
   }
 
   retrieve.then(pages => {
-    $('#i3 a').style.display = 'none';
+    $('#i3 a').remove();
 
-    const reload = (event: MouseEvent): void => {
-      event.stopPropagation();
-      event.preventDefault();
+    const template = document.createElement('template');
+    template.innerHTML = pages
+      .map(e => `
+        <a href="${e.imgsrc}">
+          <img src="${e.imgsrc}" style="${e.style}" data-page="${e.page}" data-locked="false" />
+          <div class="close"></div>
+          <div class="swap"></div>
+          <div class="page-number">${e.page}</div>
+        </a>`)
+      .join('');
 
-      const target = event.target as HTMLImageElement;
-
-      if (target.dataset.locked === 'true') {
-        return;
-      }
-
-      target.dataset.locked = 'true';
-
-      ehr.fail( parseInt(target.dataset.page, 10) ).then(imgInfo => {
-        target.src = imgInfo.imgsrc;
-        (target.parentNode as HTMLAnchorElement).href = imgInfo.imgsrc;
-        target.dataset.locked = 'false';
+    template.content.querySelectorAll('img').forEach(e => {
+      e.addEventListener('error', function onError(event) {
+        e.removeEventListener('error', onError);
+        reload(event);
       });
-    };
-
-    pages.forEach(e => {
-      const pageNode = document.createElement('a');
-
-      pageNode.setAttribute('href', e.imgsrc);
-      pageNode.innerHTML = `<img src="${e.imgsrc}" style="${e.style}" />`;
-      $('#i3').appendChild(pageNode);
-
-      const imgNode = pageNode.childNodes[0] as HTMLImageElement;
-      imgNode.dataset.page = e.page.toString();
-      imgNode.dataset.locked = 'false';
-
-      imgNode.addEventListener('error', reload);
-      imgNode.addEventListener('click', reload);
 
       let timeout: number;
       if (AutoReload) {
         timeout = window.setTimeout( () => {
-          console.log(`timeout: page ${e.page}`);
-          const clickEvent = new MouseEvent('click');
-          imgNode.dispatchEvent(clickEvent);
+          console.log(`timeout: page ${e.dataset.page}`);
+          const clickEvent = new MouseEvent('click', {
+            bubbles: true,
+            cancelable: true,
+            view: window
+          });
+          e.dispatchEvent(clickEvent);
         }, LoadTimeout);
-      }
 
-      imgNode.addEventListener('load', function onload() {
-        pageNode.removeEventListener('load', onload);
-        if (AutoReload) {
+        e.addEventListener('load', function onload() {
+          e.removeEventListener('load', onload);
           clearTimeout(timeout);
-        }
-      });
+        });
+      }
+    });
+
+    $('#i3').appendChild(template.content);
+    $('#i3').addEventListener('click', event => {
+      if ((event.target as HTMLElement).nodeName === 'IMG') {
+        reload(event);
+      }
+      else if ((event.target as HTMLElement).classList.contains('close')) {
+        hideImage(event);
+      }
+      else if ((event.target as HTMLElement).classList.contains('swap')) {
+        swapImage(event);
+      }
+      else if ((event.target as HTMLElement).classList.contains('page-number')) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
     });
 
     buttonRetrieve.textContent = 'Done!';
@@ -174,5 +240,5 @@ buttonRange.addEventListener('click', event => {
   const pageNum = $('div.sn').textContent.match(/(\d+)\s*\/\s*(\d+)/).slice(1);
   buttonRange.insertAdjacentHTML('afterend', `<span id="ehrsetrange"><input type="number" id="ehrstart" value="${pageNum[0]}" min="1" max="${pageNum[1]}"> - <input type="number" id="ehrstop" value="${pageNum[1]}" min="1" max="${pageNum[1]}"></span>`);
 
-  buttonRange.parentNode.removeChild(buttonRange);
+  buttonRange.remove();
 });
