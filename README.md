@@ -6,6 +6,7 @@
 - Retrieve all images and scroll down to view, as auto pager do
 - See two images in left and right
 - Set retrieving range
+- Set image height to view height
 
 This user script is tested under [Mozilla Firefox](https://www.mozilla.org/)
 . To run user scripts, you have to install [Greasemonkey](https://addons.mozilla.org/zh-tw/firefox/addon/greasemonkey/)
@@ -27,6 +28,7 @@ title:
     left and right.
 - `Retrieve!` will retrieve all images (or user-defined range) in the gallery.
 - `Set Range` can set image retreveing range, including end.
+- `View Height` will force set the image height to 100% view height
 - For each image a small swap button hiding at the top-left corner, move your
   mouse to see it and click! It will swap the image with previous image.
 - Like above, a hide button at the top-right corner will temporary remove the
