@@ -1,10 +1,12 @@
 // ==UserScript==
 // @name        e-hentai retriever
-// @namespace   http://e-hentai.org
+// @namespace   https://github.com/s25g5d4/e-hentai-retriever
 // @description e-hentai & exhentai image url retriever
 // @include     /^https?:\/\/e-hentai.org\/s\/.*/
 // @include     /^https?:\/\/exhentai.org\/s\/.*/
 // @version     4.0.0
+// @author      s25g5d4
+// @homepageURL https://github.com/s25g5d4/e-hentai-retriever
 // @grant       GM_xmlhttpRequest
 // @grant       unsafeWindow
 // ==/UserScript==
@@ -297,12 +299,12 @@ exports.default = EhRetriever;
 /* 2 */
 /***/ (function(module, exports, __webpack_require__) {
 
-exports = module.exports = __webpack_require__(3)(undefined);
+exports = module.exports = __webpack_require__(3)(false);
 // imports
 
 
 // module
-exports.push([module.i, "#i3 a{display:inline-block;position:relative}.close,.page-number,.swap{position:absolute;width:32px;height:32px;margin:8px;z-index:999;opacity:0;transition:opacity .25s;background-color:hsla(0,0%,100%,.3)}.close{top:0;right:0;background-image:url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAmElEQVRYhc2USQ6AMAwD+/9PhyuRAs3igVrqCTR2m2UtL1u8Hj3sdkjz0MOCQ5o7j+iDOsTWgwyRZhMhykxliDZLEWLMmABkr9gByfuoAsQmKQPGd8mbAW7eDYHoV/NsCFxH3/6I+h8xAZ/tgMo/mDkWogOUhZiAxiEUt2gzlHUss4hOTjPJWd6y8UXSDaFWqQyUUo1Iy3lcN6p2mB7qGCwAAAAASUVORK5CYII=)}.swap{top:0;left:0;background-image:url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAdklEQVRYhe3TwQ0AIQhE0enA7b9JS2BPezExERb9HpiEI/KiIlUqZ2I3AFCECUaYYMQI+IXokwMjhQNCCPwGmqTHWal/IJKrtsDVlA3Y17Bwnns4/lb4TzX5161lDo9UJ4eHAZmIMGCGOB4cMCKw4IAPUalszwvTfbCPlftI4QAAAABJRU5ErkJggg==)}.page-number{bottom:0;right:0;font-size:16px;line-height:32px;color:#000}.close:hover,.page-number:hover,.swap:hover{opacity:1}.hidden{display:none!important}.show-hidden{font-size:larger;margin-left:5px}", ""]);
+exports.push([module.i, "#i3 a {\n  display: inline-block;\n  position: relative;\n}\n\n#i3.force-img-full-height a img {\n\twidth:auto !important;\n\theight:100vh !important;\n}\n\n.close,\n.swap,\n.page-number {\n\tposition: absolute;\n\twidth: 32px;\n\theight: 32px;\n\tmargin: 8px;\n\tz-index: 999;\n  opacity: 0;\n  transition: opacity 0.25s;\n\tbackground-color: rgba(255, 255, 255, 0.3);\n}\n\n.close {\n\ttop: 0;\n\tright: 0;\n\tbackground-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAmElEQVRYhc2USQ6AMAwD+/9PhyuRAs3igVrqCTR2m2UtL1u8Hj3sdkjz0MOCQ5o7j+iDOsTWgwyRZhMhykxliDZLEWLMmABkr9gByfuoAsQmKQPGd8mbAW7eDYHoV/NsCFxH3/6I+h8xAZ/tgMo/mDkWogOUhZiAxiEUt2gzlHUss4hOTjPJWd6y8UXSDaFWqQyUUo1Iy3lcN6p2mB7qGCwAAAAASUVORK5CYII=);\n}\n\n.swap {\n\ttop: 0;\n\tleft: 0;\n\tbackground-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAdklEQVRYhe3TwQ0AIQhE0enA7b9JS2BPezExERb9HpiEI/KiIlUqZ2I3AFCECUaYYMQI+IXokwMjhQNCCPwGmqTHWal/IJKrtsDVlA3Y17Bwnns4/lb4TzX5161lDo9UJ4eHAZmIMGCGOB4cMCKw4IAPUalszwvTfbCPlftI4QAAAABJRU5ErkJggg==);\n}\n\n.page-number {\n\tbottom: 0;\n\tright: 0;\n\tfont-size: 16px;\n\tline-height: 32px;\n\tcolor: black;\n}\n\n.close:hover,\n.swap:hover,\n.page-number:hover {\n  opacity: 1;\n}\n\n.hidden {\n\tdisplay: none !important;\n}\n\n.show-hidden {\n\tfont-size: larger;\n\tmargin-left: 5px;\n}\n", ""]);
 
 // exports
 
@@ -1238,7 +1240,7 @@ class Queue {
                 timeoutId: undefined
             });
         });
-        console.log(`queue: job ${name} queued`);
+        // console.log(`queue: job ${name} queued`);
         this.dequeue();
         return job;
     }
@@ -1247,7 +1249,7 @@ class Queue {
         if (slot.length < limit && q.length >= 1) {
             const job = q.shift();
             slot.push(job);
-            console.log(`queue: job ${job.name} started`);
+            // console.log(`queue: job ${job.name} started`);
             if (timeout) {
                 job.timeoutId = window.setTimeout(() => this.jobTimeout(job), timeout);
             }
@@ -1260,7 +1262,7 @@ class Queue {
                 if (job.timeoutId) {
                     window.clearTimeout(job.timeoutId);
                 }
-                console.log(`queue: job ${job.name} resolved`);
+                // console.log(`queue: job ${job.name} resolved`);
                 job.resolve(data);
             };
             const onRejected = (reason) => {
@@ -1272,7 +1274,7 @@ class Queue {
                 if (job.timeoutId) {
                     window.clearTimeout(job.timeoutId);
                 }
-                console.log(`queue: job ${job.name} rejected`);
+                // console.log(`queue: job ${job.name} rejected`);
                 job.reject(reason);
             };
             job.run(onFulfilled, onRejected);
@@ -1280,7 +1282,7 @@ class Queue {
     }
     jobTimeout(job) {
         this.removeJob(job);
-        console.log(`queue: job ${job.name} timeout`);
+        // console.log(`queue: job ${job.name} timeout`);
         job.reject(new Error(`queue: job ${job.name} timeout`));
         job = null;
     }
@@ -1318,15 +1320,17 @@ const buttonsFragment = document.createDocumentFragment();
 const buttonDoubleFrame = document.createElement('button');
 const buttonRetrieve = document.createElement('button');
 const buttonRange = document.createElement('button');
+const buttonFullHeight = document.createElement('button');
 buttonsFragment.appendChild(buttonDoubleFrame);
+buttonsFragment.appendChild(buttonFullHeight);
 buttonsFragment.appendChild(buttonRetrieve);
 buttonsFragment.appendChild(buttonRange);
 buttonDoubleFrame.textContent = 'Double Frame';
 buttonRetrieve.textContent = 'Retrieve!';
 buttonRange.textContent = 'Set Range';
+buttonFullHeight.textContent = 'View Height';
 $('#i1').insertBefore(buttonsFragment, $('#i2'));
 let ehentaiResize;
-let maxImageWidth;
 let originalWidth;
 let ehr;
 let showHiddenImageLink = false;
@@ -1376,6 +1380,25 @@ const swapImage = (event) => {
         left.parentElement.insertBefore(right, left);
     }
 };
+const scrollNextImage = (event) => {
+    if (event.keyCode !== 9) {
+        return;
+    }
+    event.preventDefault();
+    const bodyOffset = document.body.getBoundingClientRect().top;
+    const pageY = window.pageYOffset;
+    const imgs = Array.from($$('#i3 a img'));
+    const isLast = !imgs.some((e, i) => {
+        const imgOffset = e.getBoundingClientRect().top - bodyOffset;
+        if (pageY - imgOffset < -1) {
+            window.scrollTo(0, imgOffset);
+            return true;
+        }
+    });
+    if (isLast) {
+        window.scrollTo(0, imgs[0].getBoundingClientRect().top - bodyOffset);
+    }
+};
 buttonDoubleFrame.addEventListener('click', event => {
     if (!ehentaiResize) {
         try {
@@ -1385,9 +1408,10 @@ buttonDoubleFrame.addEventListener('click', event => {
             console.log(e);
         }
     }
-    if (!maxImageWidth) {
-        maxImageWidth = Math.max.apply(null, $$('#i3 a img').map(e => parseInt(e.style.width, 10)));
-    }
+    const imgWidths = $$('#i3 a img').map(e => e.getBoundingClientRect().width);
+    const avg = imgWidths.reduce((p, c) => p + c) / imgWidths.length;
+    const filtered = imgWidths.filter(v => (v < avg * 1.5 && v > avg * 0.5));
+    const filteredMax = Math.max.apply(null, filtered);
     if (!originalWidth) {
         originalWidth = parseInt($('#i1').style.width, 10);
     }
@@ -1400,8 +1424,8 @@ buttonDoubleFrame.addEventListener('click', event => {
             console.log(e);
         }
         ;
-        $('#i1').style.maxWidth = (maxImageWidth * 2 + 20) + 'px';
-        $('#i1').style.width = (maxImageWidth * 2 + 20) + 'px';
+        $('#i1').style.maxWidth = (filteredMax * 2 + 20) + 'px';
+        $('#i1').style.width = (filteredMax * 2 + 20) + 'px';
     }
     else {
         buttonDoubleFrame.textContent = 'Double Frame';
@@ -1500,6 +1524,9 @@ buttonRetrieve.addEventListener('click', event => {
         });
         buttonRetrieve.textContent = 'Done!';
         buttonDoubleFrame.removeAttribute('disabled');
+        buttonFullHeight.removeAttribute('disabled');
+        document.onkeydown = null;
+        document.addEventListener('keydown', scrollNextImage);
     }).catch(e => { console.log(e); });
 });
 buttonRange.addEventListener('click', event => {
@@ -1508,6 +1535,9 @@ buttonRange.addEventListener('click', event => {
     const pageNum = $('div.sn').textContent.match(/(\d+)\s*\/\s*(\d+)/).slice(1);
     buttonRange.insertAdjacentHTML('afterend', `<span id="ehrsetrange"><input type="number" id="ehrstart" value="${pageNum[0]}" min="1" max="${pageNum[1]}"> - <input type="number" id="ehrstop" value="${pageNum[1]}" min="1" max="${pageNum[1]}"></span>`);
     buttonRange.remove();
+});
+buttonFullHeight.addEventListener('click', event => {
+    $('#i3').classList.toggle('force-img-full-height');
 });
 
 
