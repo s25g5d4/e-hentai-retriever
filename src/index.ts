@@ -87,6 +87,27 @@ const swapImage = (event: Event): void => {
   }
 };
 
+const scrollNextImage = (event: KeyboardEvent): void => {
+  if (event.keyCode !== 9) {
+    return;
+  }
+
+  event.preventDefault();
+
+  const bodyOffset = document.body.getBoundingClientRect().top;
+  const pageY = window.pageYOffset;
+  const imgs = Array.from($$('#i3 a img'));
+  const isLast = !imgs.some((e, i) => {
+    const imgOffset = e.getBoundingClientRect().top - bodyOffset;
+    if (pageY - imgOffset < -1) {
+      window.scrollTo(0, imgOffset);
+      return true;
+    }
+  });
+  if (isLast) {
+    window.scrollTo(0, imgs[0].getBoundingClientRect().top - bodyOffset);
+  }
+};
 
 buttonDoubleFrame.addEventListener('click', event => {
   if (!ehentaiResize) {
@@ -234,6 +255,9 @@ buttonRetrieve.addEventListener('click', event => {
     buttonRetrieve.textContent = 'Done!';
     buttonDoubleFrame.removeAttribute('disabled');
     buttonFullHeight.removeAttribute('disabled');
+    document.onkeydown = null;
+    document.addEventListener('keydown', scrollNextImage);
+
   }).catch(e => { console.log(e); });
 });
 
