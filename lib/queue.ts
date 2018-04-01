@@ -37,7 +37,7 @@ export class Queue<T> {
         timeoutId: undefined
       });
     });
-    console.log(`queue: job ${name} queued`);
+    // console.log(`queue: job ${name} queued`);
     this.dequeue();
 
     return job;
@@ -49,7 +49,7 @@ export class Queue<T> {
     if (slot.length < limit && q.length >= 1) {
       const job = q.shift();
       slot.push(job);
-      console.log(`queue: job ${job.name} started`);
+      // console.log(`queue: job ${job.name} started`);
 
       if (timeout) {
         job.timeoutId = window.setTimeout(() => this.jobTimeout(job), timeout);
@@ -65,7 +65,7 @@ export class Queue<T> {
         if (job.timeoutId) {
           window.clearTimeout(job.timeoutId);
         }
-        console.log(`queue: job ${job.name} resolved`);
+        // console.log(`queue: job ${job.name} resolved`);
 
         job.resolve(data);
       };
@@ -80,7 +80,7 @@ export class Queue<T> {
         if (job.timeoutId) {
           window.clearTimeout(job.timeoutId);
         }
-        console.log(`queue: job ${job.name} rejected`);
+        // console.log(`queue: job ${job.name} rejected`);
 
         job.reject(reason);
       };
@@ -91,7 +91,7 @@ export class Queue<T> {
 
   jobTimeout(job: IQueueJob<T>): void {
     this.removeJob(job);
-    console.log(`queue: job ${job.name} timeout`);
+    // console.log(`queue: job ${job.name} timeout`);
     job.reject(new Error(`queue: job ${job.name} timeout`));
     job = null;
   }
