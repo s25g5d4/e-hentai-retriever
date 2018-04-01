@@ -3,6 +3,11 @@
   position: relative;
 }
 
+#i3.force-img-full-height a img {
+	width:auto !important;
+	height:100vh !important;
+}
+
 .close,
 .swap,
 .page-number {

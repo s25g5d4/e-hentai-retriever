@@ -14,17 +14,19 @@ const buttonsFragment = document.createDocumentFragment();
 const buttonDoubleFrame = document.createElement('button');
 const buttonRetrieve = document.createElement('button');
 const buttonRange = document.createElement('button');
+const buttonFullHeight = document.createElement('button');
 buttonsFragment.appendChild(buttonDoubleFrame);
+buttonsFragment.appendChild(buttonFullHeight);
 buttonsFragment.appendChild(buttonRetrieve);
 buttonsFragment.appendChild(buttonRange);
 buttonDoubleFrame.textContent = 'Double Frame';
 buttonRetrieve.textContent = 'Retrieve!';
 buttonRange.textContent = 'Set Range';
+buttonFullHeight.textContent = 'View Height';
 
 $('#i1').insertBefore(buttonsFragment, $('#i2'));
 
 let ehentaiResize;
-let maxImageWidth: number;
 let originalWidth: number;
 let ehr: EhRetriever;
 let showHiddenImageLink: boolean = false;
@@ -96,9 +98,10 @@ buttonDoubleFrame.addEventListener('click', event => {
     }
   }
 
-  if (!maxImageWidth) {
-    maxImageWidth = Math.max.apply(null, $$('#i3 a img').map(e => parseInt(e.style.width, 10)));
-  }
+  const imgWidths = $$('#i3 a img').map(e => e.getBoundingClientRect().width);
+  const avg = imgWidths.reduce((p, c) => p + c) / imgWidths.length;
+  const filtered = imgWidths.filter(v => (v < avg * 1.5 && v > avg * 0.5));
+  const filteredMax = Math.max.apply(null, filtered);
 
   if (!originalWidth) {
     originalWidth = parseInt($('#i1').style.width, 10);
@@ -114,8 +117,8 @@ buttonDoubleFrame.addEventListener('click', event => {
       console.log(e);
     };
 
-    $('#i1').style.maxWidth = (maxImageWidth * 2 + 20) + 'px';
-    $('#i1').style.width = (maxImageWidth * 2 + 20) + 'px';
+    $('#i1').style.maxWidth = (filteredMax * 2 + 20) + 'px';
+    $('#i1').style.width = (filteredMax * 2 + 20) + 'px';
   }
   else {
     buttonDoubleFrame.textContent = 'Double Frame';
@@ -230,6 +233,7 @@ buttonRetrieve.addEventListener('click', event => {
 
     buttonRetrieve.textContent = 'Done!';
     buttonDoubleFrame.removeAttribute('disabled');
+    buttonFullHeight.removeAttribute('disabled');
   }).catch(e => { console.log(e); });
 });
 
@@ -241,4 +245,8 @@ buttonRange.addEventListener('click', event => {
   buttonRange.insertAdjacentHTML('afterend', `<span id="ehrsetrange"><input type="number" id="ehrstart" value="${pageNum[0]}" min="1" max="${pageNum[1]}"> - <input type="number" id="ehrstop" value="${pageNum[1]}" min="1" max="${pageNum[1]}"></span>`);
 
   buttonRange.remove();
+});
+
+buttonFullHeight.addEventListener('click', event => {
+  $('#i3').classList.toggle('force-img-full-height');
 });
