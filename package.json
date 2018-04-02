@@ -6,14 +6,15 @@
   "license": "MIT",
   "repository": "github:s25g5d4/e-hentai-retriever",
   "scripts": {
-    "build": "webpack"
+    "build": "rollup -c"
   },
   "dependencies": {
-    "@types/node": "^8.5.10",
-    "css-loader": "^0.28.9",
-    "style-loader": "^0.18.2",
-    "ts-loader": "^2.3.7",
-    "typescript": "^2.7.1",
-    "webpack": "^2.7.0"
+    "@types/node": "^9.6.1",
+    "eventemitter3": "^3.0.1",
+    "rollup": "^0.57.1",
+    "rollup-plugin-node-builtins": "^2.1.2",
+    "rollup-plugin-postcss": "^1.5.0",
+    "rollup-plugin-typescript2": "^0.12.0",
+    "typescript": "^2.7.1"
   }
 }

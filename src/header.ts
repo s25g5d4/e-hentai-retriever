@@ -1,3 +1,4 @@
+export default `
 // ==UserScript==
 // @name        e-hentai retriever
 // @namespace   https://github.com/s25g5d4/e-hentai-retriever
@@ -10,3 +11,4 @@
 // @grant       GM_xmlhttpRequest
 // @grant       unsafeWindow
 // ==/UserScript==
+`.trim();

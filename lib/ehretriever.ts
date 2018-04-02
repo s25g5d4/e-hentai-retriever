@@ -1,6 +1,6 @@
 import Queue from './queue';
 import COFetch from './cofetch';
-import * as EventEmitter from 'events';
+import { EventEmitter } from 'events';
 
 interface IGallery {
   gid: string;

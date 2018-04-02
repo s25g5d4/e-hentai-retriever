@@ -1,8 +1,19 @@
 {
   "compilerOptions": {
-    "target": "es2015",
-    "module": "commonjs",
-    "sourceMap": true,
-    "allowJs": true
-  }
+    "target": "es2017",
+    "module": "esnext",
+    "types": [
+      "node"
+    ],
+    "sourceMap": false,
+    "allowJs": true,
+    "moduleResolution": "Node",
+    "outDir": "build"
+  },
+  "include": [
+    "src/**/*.ts"
+  ],
+  "exclude": [
+    "docs"
+  ]
 }
