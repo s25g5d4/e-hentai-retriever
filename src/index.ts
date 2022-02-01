@@ -11,14 +11,17 @@ const $ = (selector: string) => document.querySelector(selector) as HTMLElement;
 const $$ = (selector: string) => Array.from(document.querySelectorAll(selector)) as HTMLElement[];
 
 const buttonsFragment = document.createDocumentFragment();
+const buttonReverse = document.createElement('button');
 const buttonDoubleFrame = document.createElement('button');
 const buttonRetrieve = document.createElement('button');
 const buttonRange = document.createElement('button');
 const buttonFullHeight = document.createElement('button');
+buttonsFragment.appendChild(buttonReverse);
 buttonsFragment.appendChild(buttonDoubleFrame);
 buttonsFragment.appendChild(buttonFullHeight);
 buttonsFragment.appendChild(buttonRetrieve);
 buttonsFragment.appendChild(buttonRange);
+buttonReverse.textContent = 'Reverse';
 buttonDoubleFrame.textContent = 'Double Frame';
 buttonRetrieve.textContent = 'Retrieve!';
 buttonRange.textContent = 'Set Range';
@@ -108,6 +111,32 @@ const scrollNextImage = (event: KeyboardEvent): void => {
     window.scrollTo(0, imgs[0].getBoundingClientRect().top - bodyOffset);
   }
 };
+
+buttonReverse.addEventListener('click', event => {
+  const i3 = $('#i3');
+  const imgs = $$('#i3 > a[data-page]');
+  if (buttonReverse.textContent === 'Reverse') {
+    buttonReverse.textContent = 'Original Order';
+    imgs
+      .sort((a, b) => a.offsetTop - b.offsetTop)
+      .reduce((p, c) => {
+        const l = (p as any).at(-1);
+        if (!l || l.at(-1).offsetTop !== c.offsetTop) {
+          return [...p, [c]];
+        }
+        l.push(c);
+        return p;
+        }, [])
+      .flatMap(e => e.reverse())
+      .forEach(e => i3.appendChild(e))
+  }
+  else {
+    buttonReverse.textContent = 'Reverse';
+    imgs
+      .sort((a, b) => parseInt(a.dataset.page, 10) - parseInt(b.dataset.page, 10))
+      .forEach(e => i3.appendChild(e));
+  }
+});
 
 buttonDoubleFrame.addEventListener('click', event => {
   if (!ehentaiResize) {
@@ -202,7 +231,7 @@ buttonRetrieve.addEventListener('click', event => {
     const template = document.createElement('template');
     template.innerHTML = pages
       .map(e => `
-        <a href="${e.imgsrc}">
+        <a href="${e.imgsrc}" data-page="${e.page}">
           <img src="${e.imgsrc}" style="${e.style}" data-page="${e.page}" data-locked="false" />
           <div class="close"></div>
           <div class="swap"></div>
