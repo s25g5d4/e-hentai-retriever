@@ -148,7 +148,7 @@ buttonDoubleFrame.addEventListener('click', event => {
     }
   }
 
-  const imgWidths = $$('#i3 a img').map(e => e.getBoundingClientRect().width);
+  const imgWidths = $$('#i3 a:not(.hidden) img').map(e => e.getBoundingClientRect().width);
   const avg = imgWidths.reduce((p, c) => p + c) / imgWidths.length;
   const filtered = imgWidths.filter(v => (v < avg * 1.5 && v > avg * 0.5));
   const filteredMax = Math.max.apply(null, filtered);
