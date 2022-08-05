@@ -4,7 +4,7 @@
 // @description e-hentai & exhentai image url retriever
 // @include     /^https?://e-hentai.org/s/.*/
 // @include     /^https?://exhentai.org/s/.*/
-// @version     4.2.0
+// @version     4.2.1
 // @author      s25g5d4
 // @homepageURL https://github.com/s25g5d4/e-hentai-retriever
 // @grant       GM_xmlhttpRequest
@@ -784,7 +784,7 @@
           const failPage = pages[index - 1];
           const failnl = [...failPage.failnl.values()].map(e => `nl=${e}`).join('&');
           const res = await this.fetch(`${this.ehentaiHost}/${failPage.url}?${failnl}`).then(res => res.text());
-          const parsed = res.match(/<img[^>]*id="img"[^>]*src="([^"]+)"[^>]*.*onclick="return nl\('([0-9-]+)'\)/i);
+          const parsed = res.match(/<img[^>]*id="img"[^>]*src="([^"]+)"[^>]*.*onclick="return nl\('([^']+)'\)/i);
           if (parsed) {
               failPage.imgsrc = parsed[1];
               failPage.failnl.add(parsed[2]);
@@ -955,7 +955,6 @@
       buttonRetrieve.textContent = 'Initializing...';
       if (!ehr) {
           ehr = new EhRetriever(location.href, document.body.innerHTML);
-          console.log(ehr);
       }
       ehr.on('ready', () => {
           buttonRetrieve.textContent = `Ready to retrieve`;
