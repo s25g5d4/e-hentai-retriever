@@ -207,7 +207,7 @@ export class EhRetriever extends EventEmitter {
     const failnl = [ ...failPage.failnl.values() ].map(e => `nl=${e}`).join('&');
     const res = await this.fetch(`${this.ehentaiHost}/${failPage.url}?${failnl}`).then(res => res.text());
 
-    const parsed = res.match(/<img[^>]*id="img"[^>]*src="([^"]+)"[^>]*.*onclick="return nl\('([0-9-]+)'\)/i);
+    const parsed = res.match(/<img[^>]*id="img"[^>]*src="([^"]+)"[^>]*.*onclick="return nl\('([^']+)'\)/i);
 
     if (parsed) {
       failPage.imgsrc = parsed[1];
