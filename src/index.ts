@@ -192,7 +192,6 @@ buttonRetrieve.addEventListener('click', event => {
 
   if (!ehr) {
     ehr = new EhRetriever(location.href, document.body.innerHTML);
-    console.log(ehr);
   }
 
   ehr.on('ready', () => {
