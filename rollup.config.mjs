@@ -1,6 +1,6 @@
 import typescript from '@rollup/plugin-typescript';
 import postcss from 'rollup-plugin-postcss';
-import builtins from 'rollup-plugin-node-builtins';
+import nodePolyfills from 'rollup-plugin-polyfill-node';
 
 import * as fs from 'node:fs';
 
@@ -16,7 +16,7 @@ export default {
 
 	plugins: [
     typescript(),
-    builtins(),
+    nodePolyfills(),
     postcss()
 	]
 }

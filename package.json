@@ -1,7 +1,7 @@
 {
   "name": "e-hentai-retriever",
   "description": "e-hentai image retriever and auto pager",
-  "version": "4.3.0",
+  "version": "4.3.1",
   "author": "Zhong-Jhe Wu",
   "license": "MIT",
   "repository": "github:s25g5d4/e-hentai-retriever",
@@ -13,7 +13,7 @@
     "@types/node": "^20.11.13",
     "postcss": "^8.4.33",
     "rollup": "^4.9.6",
-    "rollup-plugin-node-builtins": "^2.1.2",
+    "rollup-plugin-polyfill-node": "^0.13.0",
     "rollup-plugin-postcss": "^4.0.2",
     "tslib": "^2.6.2",
     "typescript": "^5.3.3"

@@ -4,7 +4,7 @@
 // @description e-hentai & exhentai image url retriever
 // @include     /^https?://e-hentai.org/s/.*/
 // @include     /^https?://exhentai.org/s/.*/
-// @version     4.3.0
+// @version     4.3.1
 // @author      s25g5d4
 // @homepageURL https://github.com/s25g5d4/e-hentai-retriever
 // @grant       GM_xmlhttpRequest
@@ -520,6 +520,12 @@
 
         return this;
       };
+      
+  // Alias for removeListener added in NodeJS 10.0
+  // https://nodejs.org/api/events.html#events_emitter_off_eventname_listener
+  EventEmitter.prototype.off = function(type, listener){
+      return this.removeListener(type, listener);
+  };
 
   EventEmitter.prototype.removeAllListeners =
       function removeAllListeners(type) {
