@@ -14,8 +14,10 @@ export const COFetch = (input: string | Request, init: RequestInit = {}): Promis
   }
 
   const headers = Object.assign({}, request.headers);
+
+  let anonymous = true;
   if (request.credentials === 'include') {
-    headers['Cookie'] = document.cookie;
+    anonymous = false;
   }
 
   const onload = (resolve, reject, gmxhr) => {
@@ -48,6 +50,7 @@ export const COFetch = (input: string | Request, init: RequestInit = {}): Promis
 
   return new Promise<Response>( (resolve, reject) => {
     GM_xmlhttpRequest({
+      anonymous,
       method:       request.method,
       url:          request.url,
       headers:      headers,
