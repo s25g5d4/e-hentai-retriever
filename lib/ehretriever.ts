@@ -110,7 +110,7 @@ export class EhRetriever extends EventEmitter {
 
     return allPages
       .map(e => e.match(/<div[^>]*class="gdt\w"[^>]*>(?:(?:[^<]*)(?:<(?!\/div>)[^<]*)*)<\/div>/g))
-      .reduce( (p, c) => p.concat(c) ) // 2d array to 1d
+      .reduce( (p, c) => p.concat(c), []) // 2d array to 1d
       .map(e => {
         const [ , imgkey, page ] = e.match(/s\/(\w+)\/\d+-(\d+)/);
         return { imgkey, page: parseInt(page, 10) };

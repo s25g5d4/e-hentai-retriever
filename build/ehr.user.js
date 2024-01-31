@@ -133,8 +133,9 @@
           request = new Request(input, init);
       }
       const headers = Object.assign({}, request.headers);
+      let anonymous = true;
       if (request.credentials === 'include') {
-          headers['Cookie'] = document.cookie;
+          anonymous = false;
       }
       const onload = (resolve, reject, gmxhr) => {
           const init = {
@@ -162,6 +163,7 @@
       };
       return new Promise((resolve, reject) => {
           GM_xmlhttpRequest({
+              anonymous,
               method: request.method,
               url: request.url,
               headers: headers,
