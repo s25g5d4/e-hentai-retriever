@@ -4,7 +4,7 @@
 // @description e-hentai & exhentai image url retriever
 // @include     /^https?://e-hentai.org/s/.*/
 // @include     /^https?://exhentai.org/s/.*/
-// @version     4.4.0
+// @version     4.4.1
 // @author      s25g5d4
 // @homepageURL https://github.com/s25g5d4/e-hentai-retriever
 // @grant       GM_xmlhttpRequest
@@ -721,7 +721,7 @@
           gtbMatcher.lastIndex = gdtMatcher.lastIndex;
           gtbMatcher.exec(page);
           const gdtContent = page.substring(gdtMatcher.lastIndex, gtbMatcher.lastIndex);
-          return Array.from(gdtContent.matchAll(/s\/(\w+)\/\d+-(\d+)/)).map(([, imgkey, page]) => ({ imgkey, page: parseInt(page, 10) }));
+          return Array.from(gdtContent.matchAll(/s\/(\w+)\/\d+-(\d+)/g)).map(([, imgkey, page]) => ({ imgkey, page: parseInt(page, 10) }));
       }
       fetch(url, options = {}) {
           if (typeof url !== 'string') {
