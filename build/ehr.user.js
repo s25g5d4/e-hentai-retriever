@@ -4,7 +4,7 @@
 // @description e-hentai & exhentai image url retriever
 // @include     /^https?://e-hentai.org/s/.*/
 // @include     /^https?://exhentai.org/s/.*/
-// @version     4.3.1
+// @version     4.4.0
 // @author      s25g5d4
 // @homepageURL https://github.com/s25g5d4/e-hentai-retriever
 // @grant       GM_xmlhttpRequest
@@ -711,12 +711,17 @@
           }));
           allPages.unshift(firstPage);
           return allPages
-              .map(e => e.match(/<div[^>]*class="gdt\w"[^>]*>(?:(?:[^<]*)(?:<(?!\/div>)[^<]*)*)<\/div>/g))
-              .reduce((p, c) => p.concat(c), []) // 2d array to 1d
-              .map(e => {
-              const [, imgkey, page] = e.match(/s\/(\w+)\/\d+-(\d+)/);
-              return { imgkey, page: parseInt(page, 10) };
-          });
+              .map(p => this.parsePage(p))
+              .reduce((p, c) => p.concat(c), []); // 2d array to 1d
+      }
+      parsePage(page) {
+          const gdtMatcher = /<div[^>]*id="gdt"[^>]*>/g;
+          gdtMatcher.exec(page);
+          const gtbMatcher = /<div[^>]*class="gtb"[^>]*>/g;
+          gtbMatcher.lastIndex = gdtMatcher.lastIndex;
+          gtbMatcher.exec(page);
+          const gdtContent = page.substring(gdtMatcher.lastIndex, gtbMatcher.lastIndex);
+          return Array.from(gdtContent.matchAll(/s\/(\w+)\/\d+-(\d+)/)).map(([, imgkey, page]) => ({ imgkey, page: parseInt(page, 10) }));
       }
       fetch(url, options = {}) {
           if (typeof url !== 'string') {
