@@ -120,7 +120,7 @@ export class EhRetriever extends EventEmitter {
     gtbMatcher.lastIndex = gdtMatcher.lastIndex;
     gtbMatcher.exec(page);
     const gdtContent = page.substring(gdtMatcher.lastIndex, gtbMatcher.lastIndex);
-    return Array.from(gdtContent.matchAll(/s\/(\w+)\/\d+-(\d+)/)).map(([ , imgkey, page ]) => ({ imgkey, page: parseInt(page, 10) }))
+    return Array.from(gdtContent.matchAll(/s\/(\w+)\/\d+-(\d+)/g)).map(([ , imgkey, page ]) => ({ imgkey, page: parseInt(page, 10) }))
   }
 
   private fetch(url: string, options: RequestInit = {}): Promise<Response> {
